@@ -447,6 +447,9 @@ sub format_chinese_date ($) {
 
 # A useless system described by https://en.wikipedia.org/wiki/Planetary_hours
 # and http://www.renaissanceastrology.com/3rdplanetaryorder.html
+# Alas, according to http://www.chabad.org/calendar/zmanim_cdo/aid/143790/jewish/Halachic-Times-Zmanim.htm
+# and http://www.agapebiblestudy.com/charts/jewishtimedivision.htm
+# this weird system is actually identical to the Hebrew system :-/
 sub determine_planetary_hour () {
   my $it;
   my $data = read_xfce_cache;
@@ -497,6 +500,63 @@ sub format_planetary_hour ($) {
   return $it;
 }
 
+# The Hebrew system uses a different starting time (sunset)
+sub determine_hebrew_date () {
+  my $it;
+  my $data = read_xfce_cache;
+  if (defined $data) {
+    my $t = time;
+    my $today = start_of_day $t;
+    my $yesterday = yesterday $t;
+    my $tomorrow = tomorrow $t;
+    my $det = $data->{$today};
+    my($daybreak, $slice_start, $slice_end, $starting_hour);
+    if ($t < $data->{$today}->{'sunrise'}) {
+      $daybreak = $data->{$yesterday}->{'sunset'} || estimate_sunset($yesterday);
+      $slice_start = $data->{$yesterday}->{'sunset'} || estimate_sunset($yesterday);
+      $slice_end = $data->{$today}->{'sunrise'};
+      $starting_hour = 1;
+    } elsif ($t < $data->{$today}->{'sunset'}) {
+      $daybreak = $data->{$yesterday}->{'sunset'} || estimate_sunset($yesterday);
+      $slice_start = $data->{$today}->{'sunrise'};
+      $slice_end = $data->{$today}->{'sunset'};
+      $starting_hour = 13;
+    } else {
+      $daybreak = $data->{$today}->{'sunset'};
+      $slice_start = $data->{$today}->{'sunset'};
+      $slice_end = $data->{$tomorrow}->{'sunrise'};
+      $starting_hour = 1;
+    }
+    if ($slice_start && $slice_end) {
+      no integer;
+      my $slice = ($slice_end - $slice_start)/12;
+      my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $daybreak;
+      my @cmd = ('/usr/local/bin/hebcal', '-T',
+	  '-l', eval { no integer; sprintf('%d,%d', $lat, int(60*$lat)%60) },
+	  '-L', eval { no integer; sprintf('%d,%d', $lon, int(60*$lon)%60) }, $mon + 1, $mday, $year + 1900);
+
+      my $pid = open(INPUT, '-|');
+      my($year, $month, $day);
+      if (defined $pid && $pid) {
+	my $s = scalar <INPUT>;
+	($year, $month, $day) = ($3, $2, $1) if $s =~ /^(\d+)\w* of (.*?), (\d+)$/;
+	close INPUT;
+      } elsif (defined $pid) {
+	exec {$cmd[0]} @cmd;
+	die "$0: determine_hebrew_date: exec: $!\n";
+      }
+      $it = [$year, $month, $day, $starting_hour + ($t - $slice_start)/$slice, $wday, $t];
+    }
+  }
+  return $it;
+}
+
+sub format_hebrew_date ($) {
+  my($data) = @_;
+  my($year, $month, $day, $hour) = @$data;
+  return sprintf('%d.%s.%d %d', $year, $month, $day, $hour);
+}
+
 Getopt::Long::config('bundling');
 GetOptions(
   's|enable-seconds' => \$enable_seconds,
@@ -512,8 +572,11 @@ binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
 my $c = determine_chinese_date;
+my $h = determine_hebrew_date;
 my $p = determine_planetary_hour;
 print format_chinese_date $c;
 print "\n";
 print format_planetary_hour $p;
+print " | ";
+print format_hebrew_date $h;
 print "\n";
