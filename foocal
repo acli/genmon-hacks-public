@@ -624,7 +624,7 @@ sub format_hebrew_date ($) {
   my($year, $month, $day, $hour) = @$data;
   my $it;
   if ($enable_chinese) {
-    $it = sprintf('%d年%s月%d日%s間%d時', $year, $hebrew_months{$month}->{$lang}, $day, ($hour < 13? '晚': '日'), ($hour - 1)%12 + 1);
+    $it = sprintf('%d年%s月%d日%s間%d時', $year, $hebrew_months{$month}->{$lang}, $day, ($hour < 13? '夜': '日'), ($hour - 1)%12 + 1);
   } else {
     $it = sprintf('%d/%s/%d %dh (%s)', $day, $hebrew_months{$month}->{$lang}, $year, ($hour - 1)%12 + 1, ($hour < 13? 'night': 'day'));
   }
