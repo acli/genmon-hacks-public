@@ -1,0 +1,479 @@
+#!/usr/bin/perl
+# vi:set sw=2 ai sm:
+#
+# Copyright 2016 by Ambrose Li <ambrose.li@gmail.com>
+# The primary purpose of this script is to figure out the year number in the Chinese system
+# so that I can name my CV's without having to look up two web pages.
+# Everything else is just for kicks =P
+#
+# http://www.hko.gov.hk/gts/time/calendar/text/T2016e.txt
+# http://www.hko.gov.hk/gts/time/calendar/text/T2016c.txt
+# www.hko.gov.hk/gts/time/stemsandbranches.htm
+
+use strict;
+use integer;
+use utf8;
+
+use POSIX;
+use DateTime;
+use DateTime::Astro::Sunrise;
+use Getopt::Long;
+use Data::Dumper;
+
+use vars qw( $fake );
+use vars qw( $enable_seconds );
+use vars qw( $representation );
+$representation = 'name';
+
+use vars qw( $lat $lon );
+
+use vars qw( @planets );
+@planets = (
+  {
+    'name' => 'Sun',
+    'icon' => '☉',
+  },
+  {
+    'name' => 'Moon',
+    'icon' => '☽',
+  },
+  {
+    'name' => 'Mars',
+    'icon' => '♂',
+  },
+  {
+    'name' => 'Mercury',
+    'icon' => '☿',
+  },
+  {
+    'name' => 'Jupiter',
+    'icon' => '♃',
+  },
+  {
+    'name' => 'Venus',
+    'icon' => '♀',
+  },
+  {
+    'name' => 'Saturn',
+    'icon' => '♄',
+  },
+);
+
+use vars qw( @stems @branches );
+@stems = (
+  {
+    'zh' => '甲',
+    'en' => 'Jia',
+  },
+  {
+    'zh' => '乙',
+    'en' => 'Yi',
+  },
+  {
+    'zh' => '丙',
+    'en' => 'Bing',
+  },
+  {
+    'zh' => '丁',
+    'en' => 'Ding',
+  },
+  {
+    'zh' => '戊',
+    'en' => 'Wu',
+  },
+  {
+    'zh' => '己',
+    'en' => 'Ji',
+  },
+  {
+    'zh' => '庚',
+    'en' => 'Geng',
+  },
+  {
+    'zh' => '辛',
+    'en' => 'Xin',
+  },
+  {
+    'zh' => '壬',
+    'en' => 'Ren',
+  },
+  {
+    'zh' => '癸',
+    'en' => 'Gui',
+  },
+);
+@branches = (
+  {
+    'zh' => '子',
+    'en' => 'Zi',
+    'name' => 'Mouse',
+    'icon' => '🐁',
+  },
+  {
+    'zh' => '丑',
+    'en' => 'Chou',
+    'name' => 'Cow',
+    'icon' => '🐄',
+  },
+  {
+    'zh' => '寅',
+    'en' => 'Yin',
+    'name' => 'Tiger',
+    'icon' => '🐅',
+  },
+  {
+    'zh' => '卯',
+    'en' => 'Mao',
+    'name' => 'Rabbit',
+    'icon' => '🐇',
+  },
+  {
+    'zh' => '辰',
+    'en' => 'Chen',
+    'name' => 'Dragon',
+    'icon' => '🐉',
+  },
+  {
+    'zh' => '巳',
+    'en' => 'Si',
+    'name' => 'Snake',
+    'icon' => '🐍',
+  },
+  {
+    'zh' => '午',
+    'en' => 'Wu',
+    'name' => 'Horse',
+    'icon' => '🐎',
+  },
+  {
+    'zh' => '未',
+    'en' => 'Wei',
+    'name' => 'Sheep',
+    'icon' => '🐐',
+  },
+  {
+    'zh' => '申',
+    'en' => 'Shen',
+    'name' => 'Monkey',
+    'icon' => '🐒',
+  },
+  {
+    'zh' => '酉',
+    'en' => 'You',
+    'name' => 'Chicken',
+    'icon' => '🐔',
+  },
+  {
+    'zh' => '戌',
+    'en' => 'Xu',
+    'name' => 'Dog',
+    'icon' => '🐕',
+  },
+  {
+    'zh' => '亥',
+    'en' => 'Hai',
+    'name' => 'Pig',
+    'icon' => '🐖',
+  },
+);
+
+sub stem_branch_name ($) {
+  my($year) = @_;
+  $year -= 1;
+  $year %= 60;
+  return sprintf('%s-%s', $stems[$year%10]->{'en'}, $branches[$year%12]->{'en'});
+}
+
+sub start_of_day ($) {
+  my($t) = @_;
+  my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
+  return mktime(0, 0, 0, $mday, $mon, $year);
+}
+
+sub yesterday ($) {
+  my($t) = @_;
+  return start_of_day(start_of_day($t) - 12*3600);
+}
+
+sub tomorrow ($) {
+  my($t) = @_;
+  return start_of_day(start_of_day($t) + 36*3600);
+}
+
+sub estimate_sunset ($) {
+  my($t) = @_;
+  my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
+  my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
+  my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
+  my $tmp = ($sunrise->sunrise($dt))[1];
+  return $tmp->strftime('%s');
+}
+
+sub trim ($) {
+  my($s) = @_;
+  $s =~ s/^\s+//;
+  $s =~ s/\s+$//;
+  return $s;
+}
+
+sub read_ini ($) {
+  my($input) = @_;
+  my $it;
+  local(*INPUT, $.);
+  if (open(INPUT, '<:utf8', $input)) {
+    for (my $section;;) {
+      my $s = scalar <INPUT>;
+    last unless defined $s;
+      chomp $s;
+      if ($s =~ /^\s*(?:[#\%;]|$)/) {
+	;
+      } elsif ($s =~ /^\s*\[\s*([^\[\]]+?)\s*\]\s*$/) {
+	$section = $1;
+      } elsif ($s =~ /^\s*([^=]+?)\s*=\s*(.*)/) {
+	if (defined $section) {
+	  $it->{$section}->{$1} = $2;
+	} else {
+	  $it->{$1} = $2;
+	}
+      } else {
+	warn "$input:$.: Warning: Unknown input \"$s\"\n";
+      }
+    }
+    close INPUT;
+  }
+  return $it;
+}
+
+sub read_xfce_cache () {
+  my $input = "$ENV{HOME}/.config/xfce4/panel/weather-17.rc";
+  my $dir = "$ENV{HOME}/.cache/xfce4/weather";
+  my $it;
+  local(*DIR);
+  my $rc = read_ini $input;
+  if (defined $rc) {
+    ($lat, $lon) = ($rc->{'lat'}, $rc->{'lon'});
+    $input = sprintf('%s/weatherdata_%s_%s_%s', $dir, $lat, $lon, $rc->{'msl'});
+    my $data = read_ini $input;
+    for (my $i = 0;; $i += 1) {
+      my $key = "astrodata$i";
+      my $det = $data->{$key};
+    last unless defined $det;
+      my($yyyy, $mm, $dd) = ($1, $2, $3) if $det->{'day'} =~ /^(\d\d\d\d)-(\d\d)-(\d\d)$/;
+      if (defined $dd) {
+	my $midnight = mktime(0, 0, 0, $dd, $mm - 1, $yyyy - 1900);
+	if ($midnight) {
+	  for my $key (keys %$det) {
+	    my $val = $det->{$key};
+	    if ($val =~ /^(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)Z$/) {
+	      $val = mktime($6, $5, $4, $3, $2 - 1, $1 - 1900);	# mktime assumes local time so the result is wrong
+	      die "Internal error: mktime failed for \"$val\"\n" unless defined $val;
+	      my $z = POSIX::strftime('%z', localtime time);	# try to figure out timezone offset
+	      if ($z =~ /^-(\d\d)(\d\d)$/) {
+		$val -= $1 * 3600 + $2 * 60;
+	      } elsif ($z =~ /^\+(\d\d)(\d\d)$/) {
+		$val += $1 * 3600 + $2 * 60;
+	      } else {
+		die "Internal error: Unknown timezone offset \"$z\"\n";
+	      }
+	    } elsif ($val eq 'true') {
+	      $val = 1;
+	    } elsif ($val eq 'false') {
+	      $val = 0;
+	    }
+	    $it->{$midnight}->{$key} = $val;
+	  }
+	}
+      }
+    }
+  }
+  return $it;
+}
+
+sub read_page ($;$) {
+  my($url, $cache) = @_;
+  my $it;
+  my @cmd = ('/usr/bin/wget', '-q', '-O', (defined $cache? $cache: '-'), $url);
+  my $pid = open(INPUT, defined $cache? $cache: '-|');
+  @cmd = (@cmd, '-U', $fake) if defined $fake;
+  if (defined $cache || (defined $pid && $pid)) {
+    for (;;) {
+      my $s = scalar <INPUT>;
+    last unless defined $s;
+      $it .= $s;
+    }
+    close INPUT;
+  } elsif (defined $pid) {
+    exec {$cmd[0]} @cmd;
+    die "$0: get_ssid: exec: $!\n";
+  }
+  return $it;
+}
+
+sub read_cached_page ($;$) {
+  my($url, $cache) = @_;
+  return read_page $url, $cache;
+}
+
+sub read_hko_conversion_table () {
+  my $t = time;
+  my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
+  my $dir = "$ENV{HOME}/Documents/calendar";
+  my $basename = sprintf('T%04de.txt', $year + 1900);
+  my $input = "$dir/$basename";
+  mkdir $dir unless -d $dir;
+  return [read_cached_page("http://www.hko.gov.hk/gts/time/calendar/text/$basename", $input), $t];
+}
+
+# Quarters are weird. See https://zh.wikipedia.org/wiki/%E5%88%BB
+sub determine_chinese_date () {
+  my($data, $t) = @{( read_hko_conversion_table )};
+  my $it;
+  my($header, $headings, @data) = split(/\r?\n/, $data);
+  my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
+  my $midnight = start_of_day $t;
+  if ($hour == 23) { # Zi is 23:00-00:59, so 23:xx is technically already the next day =P
+    (my $_1, my $_2, my $_3, $mday, $mon, $year) = localtime($t + 3600);
+  }
+  if (@data) {
+    my($chk, $stem, $branch, $animal) = ($1, $2, $3, $4) if $header =~ / of (\d+)\s*\((\w+)-(\w+)\s.*?year of the (\w+)\)/i;
+    if (!defined $animal) {
+      warn "Internal error: Can't find animal in conversion table\n";
+    } elsif ($chk != $year + 1900) {
+      die "Internal error: Unexpected year $chk in conversion table\n";
+    } else {
+      # Figure out the primary year number of the conversion table
+      my $reference_year_number;
+      for (my $det = 0; $det < 60; $det += 1) {
+	my($i, $j) = ($det%10, $det%12);
+	$reference_year_number = $det + 1 if lc $stems[$i]->{'en'} eq lc $stem && lc $branches[$j]->{'en'} eq lc $branch;
+      last if defined $reference_year_number;
+      }
+
+      # Find the column alignments
+      my $c_greg = index($headings, 'Gregorian date');
+      my $c_lunar = index($headings, 'Lunar date');
+      my $c_wday = index($headings, 'Day-of-week');
+      my $c_term = index($headings, 'Solar terms');
+
+      die "Internal error: Cannot find Gregorian date heading\n" unless defined $c_greg;
+      die "Internal error: Cannot find Lunar date heading\n" unless defined $c_lunar;
+      die "Internal error: Cannot find Day-of-week heading\n" unless defined $c_wday;
+      die "Internal error: Cannot find Solar terms heading\n" unless defined $c_term;
+
+      my $w_greg = $c_lunar - $c_greg;
+      my $w_lunar = $c_wday - $c_lunar;
+      my $w_wday = $c_term - $c_wday;
+
+      # Find today's date in the conversion table
+      my $target = sprintf('%d/%d/%d', $year + 1900, $mon + 1, $mday);
+      my($current_year, $current_month, $current_day);
+      my($year, $month, $day, $solar_term);
+      for my $data (@data) {
+	my $greg_i = trim substr($data, $c_greg, $w_greg);
+	my $lunar_i = trim substr($data, $c_lunar, $w_lunar);
+	my $wday_i = trim substr($data, $c_wday, $w_wday);
+	my $solar_i = trim substr($data, $c_term);
+      last if defined $year && defined $month && defined $day;
+	if ($lunar_i =~ /^\d+$/) {
+	  $current_day = $lunar_i + 0;
+	} elsif ($lunar_i =~ /^(\d+)(?:st|nd|rd|th) Lunar Month/) {
+	  $current_month = $1 + 0;
+	  $current_year = $reference_year_number if $1 == 1;
+	}
+	($year, $month, $day, $solar_term) = ($current_year, $current_month, $current_day, $solar_i) if $greg_i eq $target;
+	$month = $current_month - 1 if defined $day && !defined $month && defined $current_month;
+	$year = $current_year - 1 if defined $day && !defined $year && defined $current_year;
+      }
+      undef $solar_term unless $solar_term;
+      my $chinese_hour = (($hour + 1)%24)/2 + 1;
+      my $quarter = $min/15 + 1;
+      $quarter += 4 if $hour%2 == 0;
+      $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, ($t - $midnight)/864 + 1];
+      ((3+1)%24)/2+1
+    }
+  }
+  return $it;
+}
+
+sub format_chinese_date ($) {
+  my($data) = @_;
+  my $it;
+  my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $cent) = @$data;
+  if (defined $year) {
+    $it = sprintf '%s.%s.%s', $year, $month, $day;
+    $it .= sprintf '+%d', $cent;
+    $it .= sprintf ' (%s, %s)', stem_branch_name($year), $branches[($year - 1)%12]->{$representation};
+    $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
+    $it .= sprintf ' %d.%d', $chinese_hour, $quarter;
+    $it .= sprintf ' [%d%s%d]', $chinese_hour, ($quarter < 5? 'a': 'b'), ($quarter - 1) % 4;
+    $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{'en'};
+    $it .= "\n";
+  }
+  return $it;
+}
+
+# A useless system described by https://en.wikipedia.org/wiki/Planetary_hours
+# and http://www.renaissanceastrology.com/3rdplanetaryorder.html
+sub determine_planetary_hour () {
+  my $it;
+  my $data = read_xfce_cache;
+  if (defined $data) {
+    my $t = time;
+    my $today = start_of_day $t;
+    my $yesterday = yesterday $t;
+    my $tomorrow = tomorrow $t;
+    my $det = $data->{$today};
+    my($daybreak, $slice_start, $slice_end, $starting_hour);
+    if ($t < $data->{$today}->{'sunrise'}) {
+      $daybreak = $data->{$yesterday}->{'sunrise'};
+      $slice_start = $data->{$yesterday}->{'sunset'} || estimate_sunset($yesterday);
+      $slice_end = $data->{$today}->{'sunrise'};
+      $starting_hour = 13;
+    } elsif ($t < $data->{$today}->{'sunset'}) {
+      $daybreak = $data->{$today}->{'sunrise'};
+      $slice_start = $data->{$today}->{'sunrise'};
+      $slice_end = $data->{$today}->{'sunset'};
+      $starting_hour = 1;
+    } else {
+      $daybreak = $data->{$today}->{'sunrise'};
+      $slice_start = $data->{$today}->{'sunset'};
+      $slice_end = $data->{$tomorrow}->{'sunrise'};
+      $starting_hour = 13;
+    }
+    if ($slice_start && $slice_end) {
+      no integer;
+      my $slice = ($slice_end - $slice_start)/12;
+      my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $daybreak;
+      $it = [$starting_hour + ($t - $slice_start)/$slice, $wday, $t];
+    }
+  }
+  return $it;
+}
+
+# A useless system described by https://en.wikipedia.org/wiki/Planetary_hours
+# and http://www.renaissanceastrology.com/3rdplanetaryorder.html
+sub format_planetary_hour ($) {
+  my($data) = @_;
+  my($planetary_hour, $wday, $t) = @$data;
+  no integer;
+  my $m = int(60*($planetary_hour - 1))%60 + 1;
+  my $s = int(3600*($planetary_hour - 1))%60 + 1;
+  my $fmt = $enable_seconds? '%d.%d.%d (%s)': '%d.%d%0.0s (%s)';
+  return sprintf($fmt, $planetary_hour, $m, $s, $planets[($wday + 5*(int($planetary_hour) - 1))%7]->{$representation})
+}
+
+GetOptions(
+  's|enable-seconds' => \$enable_seconds,
+  'iconic' => sub { $representation = 'icon' },
+  'symbolic' => sub { $representation = 'name' },
+) || exit(1);
+
+binmode STDIN, ':utf8';
+binmode STDOUT, ':utf8';
+binmode STDERR, ':utf8';
+
+my $c = determine_chinese_date;
+my $p = determine_planetary_hour;
+print format_chinese_date $c;
+print format_planetary_hour $p;
+print "\n";

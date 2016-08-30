@@ -1,0 +1,1 @@
+env TZ="$1" sh -c "echo \"$1:\"; date +'%a %b %e %H:%M %Z'"
