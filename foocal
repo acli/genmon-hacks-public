@@ -567,6 +567,10 @@ sub format_planetary_hour ($) {
 # The Hebrew system uses a different starting time (sunset)
 # Cf https://www.britannica.com/science/calendar/Ancient-and-religious-calendar-systems
 #    https://zh.wikipedia.org/wiki/希伯來曆
+# but apparently it's supposed to use the weird hour divisions too
+# Cf http://kehillatisrael.net/hcal/zmanim.html
+# Although the day number is supposed to change at 6pm (?!)
+# Cf http://www.jewfaq.org/calendr2.htm
 sub determine_hebrew_date () {
   my $it;
   my $data = read_xfce_cache;
