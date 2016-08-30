@@ -297,6 +297,13 @@ sub trim ($) {
   return $s;
 }
 
+sub ordinal ($) {
+  my($n) = @_;
+  my $det1 = $n%10;
+  my $det2 = int($n/10)%10;
+  return sprintf '%d%s', $n, ($det2 == 1? 'th': $det1 == 1? 'st': $det1 == 2? 'nd': $det1 == 3? 'rd': 'th');
+}
+
 sub read_ini ($) {
   my($input) = @_;
   my $it;
@@ -495,7 +502,7 @@ sub format_chinese_date ($) {
       }
       $it .= '刻)';
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
-	$it .= sprintf('(%s更)', ($chinese_hour + 1)%5 + 1);
+	$it .= sprintf('(%d更)', ($chinese_hour + 1)%5 + 1);
       }
     } else {
       $it = sprintf '%s/%s/%s', $year, $month, $day;
@@ -508,6 +515,9 @@ sub format_chinese_date ($) {
 	$it .= sprintf ' %d:%d', $chinese_hour, $quarter;
       }
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
+      if ($chinese_hour >= 11 || $chinese_hour <= 3) {
+	$it .= sprintf('(%s watch)', ordinal(($chinese_hour + 1)%5 + 1));
+      }
     }
   }
   return $it;
@@ -633,8 +643,14 @@ sub format_hebrew_date ($) {
   my $it;
   if ($enable_chinese) {
     $it = sprintf('%d年%s月%d日%s間%d時', $year, $hebrew_months{$month}->{$lang}, $day, ($hour < 13? '夜': '日'), ($hour - 1)%12 + 1);
+    if ($hour <= 12) {
+      $it .= sprintf('(%d更)', ordinal(($hour - 1)/3 + 1));
+    }
   } else {
     $it = sprintf('%d/%s/%d %dh (%s)', $day, $hebrew_months{$month}->{$lang}, $year, ($hour - 1)%12 + 1, ($hour < 13? 'night': 'day'));
+    if ($hour <= 12) {
+      $it .= sprintf('(%s watch)', ordinal(($hour - 1)/3 + 1));
+    }
   }
   return $it;
 }
