@@ -207,6 +207,15 @@ sub tomorrow ($) {
   return start_of_day(start_of_day($t) + 36*3600);
 }
 
+sub estimate_sunrise ($) {
+  my($t) = @_;
+  my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
+  my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
+  my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
+  my $tmp = ($sunrise->sunrise($dt))[0];
+  return $tmp->strftime('%s');
+}
+
 sub estimate_sunset ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
@@ -432,7 +441,6 @@ sub format_chinese_date ($) {
       }
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
     }
-    $it .= "\n";
   }
   return $it;
 }
@@ -450,7 +458,7 @@ sub determine_planetary_hour () {
     my $det = $data->{$today};
     my($daybreak, $slice_start, $slice_end, $starting_hour);
     if ($t < $data->{$today}->{'sunrise'}) {
-      $daybreak = $data->{$yesterday}->{'sunrise'};
+      $daybreak = $data->{$yesterday}->{'sunrise'} || estimate_sunrise($yesterday);
       $slice_start = $data->{$yesterday}->{'sunset'} || estimate_sunset($yesterday);
       $slice_end = $data->{$today}->{'sunrise'};
       $starting_hour = 13;
@@ -484,7 +492,9 @@ sub format_planetary_hour ($) {
   my $m = int(60*($planetary_hour - 1))%60 + 1;
   my $s = int(3600*($planetary_hour - 1))%60 + 1;
   my $fmt = $enable_seconds? '%d.%d.%d (%s)': '%d.%d%0.0s (%s)';
-  return sprintf($fmt, $planetary_hour, $m, $s, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
+  my $it = sprintf('%s ', get_representation($planets[$wday]));
+  $it .= sprintf($fmt, $planetary_hour, $m, $s, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
+  return $it;
 }
 
 Getopt::Long::config('bundling');
@@ -504,5 +514,6 @@ binmode STDERR, ':utf8';
 my $c = determine_chinese_date;
 my $p = determine_planetary_hour;
 print format_chinese_date $c;
+print "\n";
 print format_planetary_hour $p;
 print "\n";
