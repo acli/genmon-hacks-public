@@ -23,6 +23,7 @@ use Data::Dumper;
 use vars qw( $fake );
 use vars qw( $enable_seconds );
 use vars qw( $enable_sung_quarters );
+use vars qw( $enable_chinese $lang );
 use vars qw( $representation );
 $representation = 'name';
 
@@ -31,31 +32,31 @@ use vars qw( $lat $lon );
 use vars qw( @planets );
 @planets = (
   {
-    'name' => 'Sun',
+    'name' => {'zh' => '日', 'en' => 'Sun'},
     'icon' => '☉',
   },
   {
-    'name' => 'Moon',
+    'name' => {'zh' => '月', 'en' => 'Moon'},
     'icon' => '☽',
   },
   {
-    'name' => 'Mars',
+    'name' => {'zh' => '火', 'en' => 'Mars'},
     'icon' => '♂',
   },
   {
-    'name' => 'Mercury',
+    'name' => {'zh' => '水', 'en' => 'Mercury'},
     'icon' => '☿',
   },
   {
-    'name' => 'Jupiter',
+    'name' => {'zh' => '木', 'en' => 'Jupiter'},
     'icon' => '♃',
   },
   {
-    'name' => 'Venus',
+    'name' => {'zh' => '金', 'en' => 'Venus'},
     'icon' => '♀',
   },
   {
-    'name' => 'Saturn',
+    'name' => {'zh' => '土', 'en' => 'Saturn'},
     'icon' => '♄',
   },
 );
@@ -107,73 +108,73 @@ use vars qw( @stems @branches );
   {
     'zh' => '子',
     'en' => 'Zi',
-    'name' => 'Mouse',
+    'name' => {'zh' => '鼠', 'en' => 'Mouse'},
     'icon' => '🐁',
   },
   {
     'zh' => '丑',
     'en' => 'Chou',
-    'name' => 'Cow',
+    'name' => {'zh' => '牛', 'en' => 'Cow'},
     'icon' => '🐄',
   },
   {
     'zh' => '寅',
     'en' => 'Yin',
-    'name' => 'Tiger',
+    'name' => {'zh' => '虎', 'en' => 'Tiger'},
     'icon' => '🐅',
   },
   {
     'zh' => '卯',
     'en' => 'Mao',
-    'name' => 'Rabbit',
+    'name' => {'zh' => '兔', 'en' => 'Rabbit'},
     'icon' => '🐇',
   },
   {
     'zh' => '辰',
     'en' => 'Chen',
-    'name' => 'Dragon',
+    'name' => {'zh' => '龍', 'en' => 'Dragon'},
     'icon' => '🐉',
   },
   {
     'zh' => '巳',
     'en' => 'Si',
-    'name' => 'Snake',
+    'name' => {'zh' => '蛇', 'en' => 'Snake'},
     'icon' => '🐍',
   },
   {
     'zh' => '午',
     'en' => 'Wu',
-    'name' => 'Horse',
+    'name' => {'zh' => '馬', 'en' => 'Horse'},
     'icon' => '🐎',
   },
   {
     'zh' => '未',
     'en' => 'Wei',
-    'name' => 'Sheep',
+    'name' => {'zh' => '羊', 'en' => 'Sheep'},
     'icon' => '🐐',
   },
   {
     'zh' => '申',
     'en' => 'Shen',
-    'name' => 'Monkey',
+    'name' => {'zh' => '猴', 'en' => 'Monkey'},
     'icon' => '🐒',
   },
   {
     'zh' => '酉',
     'en' => 'You',
-    'name' => 'Chicken',
+    'name' => {'zh' => '雞', 'en' => 'Chicken'},
     'icon' => '🐔',
   },
   {
     'zh' => '戌',
     'en' => 'Xu',
-    'name' => 'Dog',
+    'name' => {'zh' => '狗', 'en' => 'Dog'},
     'icon' => '🐕',
   },
   {
     'zh' => '亥',
     'en' => 'Hai',
-    'name' => 'Pig',
+    'name' => {'zh' => '豬', 'en' => 'Pig'},
     'icon' => '🐖',
   },
 );
@@ -182,7 +183,12 @@ sub stem_branch_name ($) {
   my($year) = @_;
   $year -= 1;
   $year %= 60;
-  return sprintf('%s-%s', $stems[$year%10]->{'en'}, $branches[$year%12]->{'en'});
+  return sprintf('%s%s%s', $stems[$year%10]->{$lang}, ($enable_chinese? '': '-'), $branches[$year%12]->{$lang});
+}
+
+sub get_representation ($) {
+  my($s) = @_;
+  return $representation =~ /^icon/? $s->{'icon'}: $s->{'name'}->{$lang};
 }
 
 sub start_of_day ($) {
@@ -402,16 +408,30 @@ sub format_chinese_date ($) {
   my $it;
   my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $cent) = @$data;
   if (defined $year) {
-    $it = sprintf '%s.%s.%s', $year, $month, $day;
-    $it .= sprintf '+%d', $cent;
-    $it .= sprintf ' (%s, %s)', stem_branch_name($year), $branches[($year - 1)%12]->{$representation};
-    $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
-    if ($enable_sung_quarters) {
-      $it .= sprintf ' %d%s%d', $chinese_hour, ($quarter < 5? 'a': 'b'), ($quarter - 1) % 4;
+    if ($enable_chinese) {
+      $it = sprintf '%s(%s)年%s月%s日', stem_branch_name($year), get_representation($branches[($year - 1)%12]), $month, $day;
+      $it .= sprintf '%d刻', $cent;
+      $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
+      $it .= sprintf '(%s時', $branches[$chinese_hour - 1]->{$lang};
+      if ($enable_sung_quarters) {
+	$it .= $quarter < 5? '初': '正';
+	$it .= ('初', '一', '二', '三')[($quarter - 1)%4];
+      } else {
+	$it .= $quarter;
+      }
+      $it .= '刻)';
     } else {
-      $it .= sprintf ' %d.%d', $chinese_hour, $quarter;
+      $it = sprintf '%s.%s.%s', $year, $month, $day;
+      $it .= sprintf '+%d', $cent;
+      $it .= sprintf ' (%s, %s)', stem_branch_name($year), get_representation($branches[($year - 1)%12]);
+      $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
+      if ($enable_sung_quarters) {
+	$it .= sprintf ' %d%s%d', $chinese_hour, ($quarter < 5? 'a': 'b'), ($quarter - 1) % 4;
+      } else {
+	$it .= sprintf ' %d.%d', $chinese_hour, $quarter;
+      }
+      $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
     }
-    $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{'en'};
     $it .= "\n";
   }
   return $it;
@@ -464,15 +484,17 @@ sub format_planetary_hour ($) {
   my $m = int(60*($planetary_hour - 1))%60 + 1;
   my $s = int(3600*($planetary_hour - 1))%60 + 1;
   my $fmt = $enable_seconds? '%d.%d.%d (%s)': '%d.%d%0.0s (%s)';
-  return sprintf($fmt, $planetary_hour, $m, $s, $planets[($wday + 5*(int($planetary_hour) - 1))%7]->{$representation})
+  return sprintf($fmt, $planetary_hour, $m, $s, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
 }
 
 GetOptions(
   's|enable-seconds' => \$enable_seconds,
   'S|enable-sung-quarters|sung-quarters|use-sung-quarters' => \$enable_sung_quarters,
+  'z|zh|chinese|kanji' => \$enable_chinese,
   'iconic' => sub { $representation = 'icon' },
   'symbolic' => sub { $representation = 'name' },
 ) || exit(1);
+$lang = $enable_chinese? 'zh': 'en';
 
 binmode STDIN, ':utf8';
 binmode STDOUT, ':utf8';
