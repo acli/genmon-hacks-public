@@ -494,14 +494,14 @@ sub format_chinese_date ($) {
 	$it .= sprintf('(%s更)', ($chinese_hour + 1)%5 + 1);
       }
     } else {
-      $it = sprintf '%s.%s.%s', $year, $month, $day;
+      $it = sprintf '%s/%s/%s', $year, $month, $day;
       $it .= sprintf '+%.2f', $cent;
       $it .= sprintf ' (%s, %s)', stem_branch_name($year), get_representation($branches[($year - 1)%12]);
       $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
       if ($enable_sung_quarters) {
 	$it .= sprintf ' %d%s%d', $chinese_hour, ($quarter < 5? 'a': 'b'), ($quarter - 1) % 4;
       } else {
-	$it .= sprintf ' %d.%d', $chinese_hour, $quarter;
+	$it .= sprintf ' %d:%d', $chinese_hour, $quarter;
       }
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
     }
@@ -558,8 +558,8 @@ sub format_planetary_hour ($) {
   no integer;
   my $m = int(60*($planetary_hour - 1))%60 + 1;
   my $s = int(3600*($planetary_hour - 1))%60 + 1;
-  my $fmt = $enable_seconds? '%d.%d.%d (%s)': '%d.%d%0.0s (%s)';
-  my $it = sprintf('%d.', $wday + 1);
+  my $fmt = $enable_seconds? '%d:%d:%d (%s)': '%d:%d%0.0s (%s)';
+  my $it = sprintf('%d+', $wday + 1);
   $it .= sprintf($fmt, $planetary_hour, $m, $s, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
   return $it;
 }
@@ -626,7 +626,7 @@ sub format_hebrew_date ($) {
   if ($enable_chinese) {
     $it = sprintf('%d年%s月%d日%s間%d時', $year, $hebrew_months{$month}->{$lang}, $day, ($hour < 13? '晚': '日'), ($hour - 1)%12 + 1);
   } else {
-    $it = sprintf('%d.%s.%d %dh (%s)', $day, $hebrew_months{$month}->{$lang}, $year, ($hour - 1)%12 + 1, ($hour < 13? 'night': 'day'));
+    $it = sprintf('%d/%s/%d %dh (%s)', $day, $hebrew_months{$month}->{$lang}, $year, ($hour - 1)%12 + 1, ($hour < 13? 'night': 'day'));
   }
   return $it;
 }
