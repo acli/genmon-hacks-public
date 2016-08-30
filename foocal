@@ -6,6 +6,9 @@
 # so that I can name my CV's without having to look up two web pages.
 # Everything else is just for kicks =P
 #
+# This script doesn't really do a lot of calculations itself; it just gathers the information
+# from elsewhere (e.g., hebcal, or the HKO) and presents it.
+#
 # http://www.hko.gov.hk/gts/time/calendar/text/T2016e.txt
 # http://www.hko.gov.hk/gts/time/calendar/text/T2016c.txt
 # www.hko.gov.hk/gts/time/stemsandbranches.htm
@@ -180,6 +183,7 @@ use vars qw( @stems @branches );
 );
 
 # We use the weird "meaningful" names found in https://zh.wikipedia.org/wiki/希伯來曆
+# because they are short
 use vars qw( %hebrew_months );
 %hebrew_months = (
   'Nisan' => {
