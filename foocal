@@ -492,7 +492,7 @@ sub format_planetary_hour ($) {
   my $m = int(60*($planetary_hour - 1))%60 + 1;
   my $s = int(3600*($planetary_hour - 1))%60 + 1;
   my $fmt = $enable_seconds? '%d.%d.%d (%s)': '%d.%d%0.0s (%s)';
-  my $it = sprintf('%s ', get_representation($planets[$wday]));
+  my $it = sprintf('%d.', $wday + 1);
   $it .= sprintf($fmt, $planetary_hour, $m, $s, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
   return $it;
 }
