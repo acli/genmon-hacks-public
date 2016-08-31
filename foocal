@@ -506,7 +506,7 @@ sub format_chinese_date ($) {
       }
       $it .= '刻)';
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
-	$it .= sprintf('(%d更)', ($chinese_hour + 1)%5 + 1);
+	$it .= sprintf('(%d更)', ($chinese_hour - 1)%5 + 1);
       }
     } else {
       $it = sprintf '%s/%s/%s', $year, $month, $day;
@@ -520,7 +520,7 @@ sub format_chinese_date ($) {
       }
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
-	$it .= sprintf('(%s watch)', ordinal(($chinese_hour + 1)%5 + 1));
+	$it .= sprintf('(%s watch)', ordinal(($chinese_hour - 1)%5 + 1));
       }
     }
   }
