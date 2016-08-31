@@ -12,6 +12,8 @@
 # http://www.hko.gov.hk/gts/time/calendar/text/T2016e.txt
 # http://www.hko.gov.hk/gts/time/calendar/text/T2016c.txt
 # www.hko.gov.hk/gts/time/stemsandbranches.htm
+#
+# https://scitechvista.nat.gov.tw/zh-tw/articles/c/9/7/10/1/998.htm
 
 use strict;
 use integer;
@@ -111,78 +113,92 @@ use vars qw( @stems @branches );
     'en' => 'Gui',
   },
 );
+# Note that apparently the hours have names in the Han dynasty
+# Cf. http://www.oldkids.cn/group/post_detail.php?did=669531
 @branches = (
   {
     'zh' => '子',
     'en' => 'Zi',
     'name' => {'zh' => '鼠', 'en' => 'Mouse'},
     'icon' => '🐁',
+    'han_hour' => '夜半',
   },
   {
     'zh' => '丑',
     'en' => 'Chou',
     'name' => {'zh' => '牛', 'en' => 'Cow'},
     'icon' => '🐄',
+    'han_hour' => '雞鳴',
   },
   {
     'zh' => '寅',
     'en' => 'Yin',
     'name' => {'zh' => '虎', 'en' => 'Tiger'},
     'icon' => '🐅',
+    'han_hour' => '平旦',
   },
   {
     'zh' => '卯',
     'en' => 'Mao',
     'name' => {'zh' => '兔', 'en' => 'Rabbit'},
     'icon' => '🐇',
+    'han_hour' => '日出',
   },
   {
     'zh' => '辰',
     'en' => 'Chen',
     'name' => {'zh' => '龍', 'en' => 'Dragon'},
     'icon' => '🐉',
+    'han_hour' => '食時',
   },
   {
     'zh' => '巳',
     'en' => 'Si',
     'name' => {'zh' => '蛇', 'en' => 'Snake'},
     'icon' => '🐍',
+    'han_hour' => '隅中',
   },
   {
     'zh' => '午',
     'en' => 'Wu',
     'name' => {'zh' => '馬', 'en' => 'Horse'},
     'icon' => '🐎',
+    'han_hour' => '日中',
   },
   {
     'zh' => '未',
     'en' => 'Wei',
     'name' => {'zh' => '羊', 'en' => 'Sheep'},
     'icon' => '🐐',
+    'han_hour' => '日昳',
   },
   {
     'zh' => '申',
     'en' => 'Shen',
     'name' => {'zh' => '猴', 'en' => 'Monkey'},
     'icon' => '🐒',
+    'han_hour' => '晡時',
   },
   {
     'zh' => '酉',
     'en' => 'You',
     'name' => {'zh' => '雞', 'en' => 'Chicken'},
     'icon' => '🐔',
+    'han_hour' => '日入',
   },
   {
     'zh' => '戌',
     'en' => 'Xu',
     'name' => {'zh' => '狗', 'en' => 'Dog'},
     'icon' => '🐕',
+    'han_hour' => '黄昏',
   },
   {
     'zh' => '亥',
     'en' => 'Hai',
     'name' => {'zh' => '豬', 'en' => 'Pig'},
     'icon' => '🐖',
+    'han_hour' => '人定',
   },
 );
 
