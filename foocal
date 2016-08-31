@@ -508,7 +508,7 @@ sub format_chinese_date ($) {
       }
       $it .= '刻)';
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
-	$it .= sprintf('(%d更', ($chinese_hour - 1)%5 + 1);
+	$it .= sprintf('(%d更', (($chinese_hour - 10) + 12)%12);
 	my $subwatch = eval { no integer; int(($quarter - 1)*5/8) };
 	$it .= sprintf('%d點', $subwatch) if $subwatch;
 	$it .= ')';
@@ -525,7 +525,7 @@ sub format_chinese_date ($) {
       }
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
-	$it .= sprintf('(%s watch)', ordinal(($chinese_hour - 1)%5 + 1));
+	$it .= sprintf('(%s watch)', ordinal((($chinese_hour - 10) + 12)%12));
       }
     }
   }
