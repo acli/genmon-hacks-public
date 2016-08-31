@@ -426,8 +426,41 @@ sub determine_chinese_date () {
   my($header, $headings, @data) = split(/\r?\n/, $data);
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $midnight = start_of_day $t;
+  my $deciday;
   if ($hour == 23) { # Zi is 23:00-00:59, so 23:xx is technically already the next day =P
     (my $_1, my $_2, my $_3, $mday, $mon, $year) = localtime($t + 3600);
+  }
+  my $data = read_xfce_cache;
+  if (defined $data) {
+    my $t = time;
+    my $today = start_of_day $t;
+    my $yesterday = yesterday $t;
+    my $tomorrow = tomorrow $t;
+    my $det = $data->{$today};
+    my($daybreak, $slice_start, $slice_end, $starting_hour);
+    # Proportional hour is used in a very early system (Spring and Autumn Period / Warring States),
+    # but I don't even have an idea when the day starts (probably day before night) so we'll just use an arbitary cutoff
+    if ($t < $data->{$today}->{'sunrise'}) {
+      $daybreak = $data->{$yesterday}->{'sunrise'} || estimate_sunrise($yesterday);
+      $slice_start = $data->{$yesterday}->{'sunset'} || estimate_sunset($yesterday);
+      $slice_end = $data->{$today}->{'sunrise'};
+      $starting_hour = 6;
+    } elsif ($t < $data->{$today}->{'sunset'}) {
+      $daybreak = $data->{$today}->{'sunrise'};
+      $slice_start = $data->{$today}->{'sunrise'};
+      $slice_end = $data->{$today}->{'sunset'};
+      $starting_hour = 1;
+    } else {
+      $daybreak = $data->{$today}->{'sunrise'};
+      $slice_start = $data->{$today}->{'sunset'};
+      $slice_end = $data->{$tomorrow}->{'sunrise'};
+      $starting_hour = 6;
+    }
+    if ($slice_start && $slice_end) {
+      no integer;
+      my $slice = ($slice_end - $slice_start)/5;
+      $deciday = $starting_hour + ($t - $slice_start)/$slice;
+    }
   }
   if (@data) {
     my($chk, $stem, $branch, $animal) = ($1, $2, $3, $4) if $header =~ / of (\d+)\s*\((\w+)-(\w+)\s.*?year of the (\w+)\)/i;
@@ -482,8 +515,9 @@ sub determine_chinese_date () {
       undef $solar_term unless $solar_term;
       my $chinese_hour = (($hour + 1)%24)/2 + 1;
       my $quarter = $min/15 + 1;
+      my $centiday = eval { no integer; ($t - $midnight)/864 + 1 };
       $quarter += 4 if $hour%2 == 0;
-      $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, eval { no integer; ($t - $midnight)/864 + 1 }];
+      $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday];
       ((3+1)%24)/2+1
     }
   }
@@ -493,11 +527,11 @@ sub determine_chinese_date () {
 sub format_chinese_date ($) {
   my($data) = @_;
   my $it;
-  my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $cent) = @$data;
+  my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday) = @$data;
   if (defined $year) {
     if ($enable_chinese) {
       $it = sprintf '%s(%s)年%s月%s日', stem_branch_name($year), get_representation($branches[($year - 1)%12]), $month, $day;
-      $it .= sprintf '%.*f刻', $decimals, $cent;
+      $it .= sprintf '%.*f刻', $decimals, $centiday;
       $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
       $it .= sprintf '(%s時', $branches[$chinese_hour - 1]->{$lang};
       if ($enable_sung_quarters) {
@@ -515,7 +549,7 @@ sub format_chinese_date ($) {
       }
     } else {
       $it = sprintf '%s/%s/%s', $year, $month, $day;
-      $it .= sprintf '+%.*f', $decimals, $cent;
+      $it .= sprintf '+%.*f', $decimals, $centiday;
       $it .= sprintf ' (%s, %s)', stem_branch_name($year), get_representation($branches[($year - 1)%12]);
       $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
       if ($enable_sung_quarters) {
@@ -526,6 +560,13 @@ sub format_chinese_date ($) {
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
 	$it .= sprintf('(%s watch)', ordinal((($chinese_hour - 10) + 12)%12));
+      }
+    }
+    if (defined $deciday) {
+      if ($enable_chinese) {
+	$it .= sprintf(' %s:%s', ($deciday < 6? '晝': '夜'), (qw(朝 禺 中 晡 夕 甲 乙 丙 丁 戊)[$deciday - 1]));
+      } else {
+	$it .= sprintf(' %s+%d', ($deciday < 6? 'morning': 'evening'), ($deciday - 1)%5);
       }
     }
   }
