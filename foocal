@@ -27,9 +27,10 @@ use Data::Dumper;
 
 use vars qw( $fake );
 use vars qw( $enable_seconds );
-use vars qw( $enable_sung_quarters );
+use vars qw( $enable_qing_quarters );
 use vars qw( $enable_planetary $planetary_omit_details );
 use vars qw( $enable_chinese $lang );
+use vars qw( $enable_decaminutes $enable_minutes );
 use vars qw( $decimals );
 $decimals = 2;
 
@@ -545,18 +546,29 @@ sub format_chinese_date ($) {
   my $it;
   my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday) = @$data;
   if (defined $year) {
+    my $minute = eval { no integer; ($centiday*600)%60 };
+    my $decaminute = $minute/10;
+    $minute %= 10 if $enable_decaminutes;
     if ($enable_chinese) {
       $it = sprintf '%s(%s)年%s月%s日', stem_branch_name($year), get_representation($branches[($year - 1)%12]), $month, $day;
-      $it .= sprintf '%.*f刻', $decimals, $centiday;
+      if ($enable_decaminutes) {
+	$it .= sprintf '%d刻', $centiday;
+	$it .= sprintf '%d小刻', $decaminute if $decaminute;
+	$it .= sprintf '%d分', $minute if $minute && $enable_minutes;
+      } elsif ($enable_minutes) {
+	$it .= sprintf '%d刻', $centiday;
+	$it .= sprintf '%d分', $minute if $minute;
+      } else {
+	$it .= sprintf '%.*f刻', $decimals, $centiday;
+      }
       $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
       $it .= sprintf '(%s時', $branches[$chinese_hour - 1]->{$lang};
-      if ($enable_sung_quarters) {
-	$it .= $quarter < 5? '初': '正';
+      $it .= $quarter < 5? '初': '正';
+      if ($enable_qing_quarters) {
 	$it .= ('初', '一', '二', '三')[($quarter - 1)%4];
-      } else {
-	$it .= $quarter;
+	$it .= '刻';
       }
-      $it .= '刻)';
+      $it .= ')';
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
 	$it .= sprintf('(%d更', (($chinese_hour - 10) + 12)%12);
 	my $subwatch = eval { no integer; int(($quarter - 1)*5/8) };
@@ -565,13 +577,20 @@ sub format_chinese_date ($) {
       }
     } else {
       $it = sprintf '%s/%s/%s', $year, $month, $day;
-      $it .= sprintf '+%.*f', $decimals, $centiday;
+      if ($enable_decaminutes) {
+	$it .= sprintf '+%d°', $centiday;
+	$it .= sprintf "%d'", $decaminute;
+	$it .= sprintf '%d"', $minute if $enable_minutes;
+      } elsif ($enable_minutes) {
+	$it .= sprintf '+%d°', $centiday;
+	$it .= sprintf "%d'", $minute;
+      } else {
+	$it .= sprintf '+%.*f°', $decimals, $centiday;
+      }
       $it .= sprintf ' (%s, %s)', stem_branch_name($year), get_representation($branches[($year - 1)%12]);
       $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
-      if ($enable_sung_quarters) {
+      if ($enable_qing_quarters) {
 	$it .= sprintf ' %d%s%d', $chinese_hour, ($quarter < 5? 'a': 'b'), ($quarter - 1) % 4;
-      } else {
-	$it .= sprintf ' %d:%d', $chinese_hour, $quarter;
       }
       $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
@@ -725,8 +744,10 @@ sub format_hebrew_date ($) {
 Getopt::Long::config('bundling');
 GetOptions(
   'd|decimals=i' => \$decimals,
-  's|enable-seconds' => \$enable_seconds,
-  'S|enable-sung-quarters|sung-quarters|use-sung-quarters' => \$enable_sung_quarters,
+  'M|enable-decaminutes|decaminutes' => \$enable_decaminutes,
+  'm|enable-minutes|minutes' => \$enable_minutes,
+  's|enable-seconds|seconds' => \$enable_seconds,
+  'Q|enable-qing-quarters|qing-quarters|qing' => \$enable_qing_quarters,
   'p|enable-planetary:s' => sub {
 	$enable_planetary = 1;
 	die "You must specify either \"all\" or \"minimal\"\n" unless $_[1] =~ /^(?:all|full|min(?:imal(?:istic)?)?)/;
