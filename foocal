@@ -546,7 +546,7 @@ sub format_chinese_date ($) {
   my $it;
   my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday) = @$data;
   if (defined $year) {
-    my $minute = eval { no integer; ($centiday*600)%60 };
+    my $minute = eval { no integer; ($centiday*60)%60 };
     my $decaminute = $minute/10;
     $minute %= 10 if $enable_decaminutes;
     if ($enable_chinese) {
