@@ -325,6 +325,27 @@ sub ordinal ($) {
   return sprintf '%d%s', $n, ($det2 == 1? 'th': $det1 == 1? 'st': $det1 == 2? 'nd': $det1 == 3? 'rd': 'th');
 }
 
+use vars qw( %chinese_digits );
+%chinese_digits = (
+  '一' => 1,
+  '二' => 2,
+  '三' => 3,
+  '四' => 4,
+  '五' => 5,
+  '六' => 6,
+  '七' => 7,
+  '八' => 8,
+  '九' => 9,
+  '十' => 10,
+  '廿' => 20,
+  '卅' => 30,
+);
+sub parse_chinese_number ($) {
+  my($s) = @_;
+  my($tens, $units) = ($1, $2) if $s =~ /^(\S?)(\S)$/;
+  return $chinese_digits{$tens} + $chinese_digits{$units};
+}
+
 sub read_ini ($) {
   my($input) = @_;
   my $it;
@@ -401,10 +422,15 @@ sub read_xfce_cache () {
 sub read_page ($;$) {
   my($url, $cache) = @_;
   my $it;
-  my @cmd = ('/usr/bin/wget', '-q', '-O', (defined $cache? $cache: '-'), $url);
-  my $pid = open(INPUT, defined $cache? $cache: '-|');
+  my $cache_valid = defined $cache && -f $cache;
+  my $input = $cache_valid? $cache: '-|';
+  my $output = $cache_valid? '-': $cache;
+  my @cmd = ('/usr/bin/wget', '-q', '-O', $output, $url);
+  my $pid = open(INPUT, $input);
+  die "$0: read_page: fork: $!\n" if !$cache_valid && !defined $pid;
   @cmd = (@cmd, '-U', $fake) if defined $fake;
-  if (defined $cache || (defined $pid && $pid)) {
+  if ($cache_valid || (defined $pid && $pid)) {
+    binmode(INPUT, ':encoding(BIG5)') if $enable_chinese;
     for (;;) {
       my $s = scalar <INPUT>;
     last unless defined $s;
@@ -413,7 +439,7 @@ sub read_page ($;$) {
     close INPUT;
   } elsif (defined $pid) {
     exec {$cmd[0]} @cmd;
-    die "$0: get_ssid: exec: $!\n";
+    die "$0: read_page: exec: $!\n";
   }
   return $it;
 }
@@ -427,7 +453,7 @@ sub read_hko_conversion_table () {
   my $t = time;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dir = "$ENV{HOME}/Documents/calendar";
-  my $basename = sprintf('T%04de.txt', $year + 1900);
+  my $basename = sprintf('T%04d%s.txt', $year + 1900, ($enable_chinese? 'c': 'e'));
   my $input = "$dir/$basename";
   mkdir $dir unless -d $dir;
   return [read_cached_page("http://www.hko.gov.hk/gts/time/calendar/text/$basename", $input), $t];
@@ -444,6 +470,7 @@ sub determine_chinese_date () {
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $midnight = start_of_day $t;
   my $deciday;
+  ($headings, @data) = @data if !$headings; # Chinese data file
   if ($hour == 23) { # Zi is 23:00-00:59, so 23:xx is technically already the next day =P
     (my $_1, my $_2, my $_3, $mday, $mon, $year) = localtime($t + 3600);
   }
@@ -480,7 +507,12 @@ sub determine_chinese_date () {
     }
   }
   if (@data) {
-    my($chk, $stem, $branch, $animal) = ($1, $2, $3, $4) if $header =~ / of (\d+)\s*\((\w+)-(\w+)\s.*?year of the (\w+)\)/i;
+    my($chk, $stem, $branch, $animal) = ($1, $2, $3, $4) if ($enable_chinese? $header =~ /(\d+)\((.)(.)\s*-\s*肖(.)\)/: $header =~ / of (\d+)\s*\((\w+)-(\w+)\s.*?year of the (\w+)\)/i);
+    #2016年1月1日          廿二        星期五
+    #2016年1月2日          廿三        星期六
+    #2016年1月3日          廿四        星期日
+    #2016年1月4日          廿五        星期一
+    #2016年1月5日          廿六        星期二
     if (!defined $animal) {
       warn "Internal error: Can't find animal in conversion table\n";
     } elsif ($chk != $year + 1900) {
@@ -490,15 +522,15 @@ sub determine_chinese_date () {
       my $reference_year_number;
       for (my $det = 0; $det < 60; $det += 1) {
 	my($i, $j) = ($det%10, $det%12);
-	$reference_year_number = $det + 1 if lc $stems[$i]->{'en'} eq lc $stem && lc $branches[$j]->{'en'} eq lc $branch;
+	$reference_year_number = $det + 1 if lc $stems[$i]->{$lang} eq lc $stem && lc $branches[$j]->{$lang} eq lc $branch;
       last if defined $reference_year_number;
       }
 
       # Find the column alignments
-      my $c_greg = index($headings, 'Gregorian date');
-      my $c_lunar = index($headings, 'Lunar date');
-      my $c_wday = index($headings, 'Day-of-week');
-      my $c_term = index($headings, 'Solar terms');
+      my $c_greg = index($headings, $enable_chinese? '公曆日期': 'Gregorian date');
+      my $c_lunar = index($headings, $enable_chinese? '農曆日期': 'Lunar date');
+      my $c_wday = index($headings, $enable_chinese? '星期': 'Day-of-week');
+      my $c_term = index($headings, $enable_chinese? '節氣': 'Solar terms');
 
       die "Internal error: Cannot find Gregorian date heading\n" unless defined $c_greg;
       die "Internal error: Cannot find Lunar date heading\n" unless defined $c_lunar;
@@ -510,7 +542,7 @@ sub determine_chinese_date () {
       my $w_wday = $c_term - $c_wday;
 
       # Find today's date in the conversion table
-      my $target = sprintf('%d/%d/%d', $year + 1900, $mon + 1, $mday);
+      my $target = sprintf(($enable_chinese? '%d年%d月%d日': '%d/%d/%d'), $year + 1900, $mon + 1, $mday);
       my($current_year, $current_month, $current_day);
       my($year, $month, $day, $solar_term);
       for my $data (@data) {
@@ -523,7 +555,12 @@ sub determine_chinese_date () {
 	  $current_day = $lunar_i + 0;
 	} elsif ($lunar_i =~ /^(\d+)(?:st|nd|rd|th) Lunar Month/) {
 	  $current_month = $1 + 0;
-	  $current_year = $reference_year_number if $1 == 1;
+	  $current_year = $reference_year_number if $current_month == 1;
+	} elsif ($lunar_i =~ /^初(\S+)/ || $lunar_i =~ /^((?!初)\S+)(?<!月)$/) {
+	  $current_day = parse_chinese_number $1;
+	} elsif ($lunar_i =~ /^(\S+)月/) {
+	  $current_month = ($1 eq '正')? 1: parse_chinese_number $1;
+	  $current_year = $reference_year_number if $current_month == 1;
 	}
 	($year, $month, $day, $solar_term) = ($current_year, $current_month, $current_day, $solar_i) if $greg_i eq $target;
 	$month = $current_month - 1 if defined $day && !defined $month && defined $current_month;
