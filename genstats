@@ -1,0 +1,6 @@
+if [ -n "`cat -A /proc/mounts|awk '($2 == "/") && /[, ]ro[,$]/{print $0 }'`" ]; then
+	echo 'Please shutdown NOW'
+fi
+if [ -d "$HOME/.dropbox" ]; then
+	printf 'Dropbox: '; dropbox status
+fi
