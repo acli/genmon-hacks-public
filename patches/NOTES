@@ -1,0 +1,10 @@
+$VAR1 = '-2.02761789232564';
+$VAR1 = '20.322037316171';
+$VAR1 = -2;
+$VAR1 = -1;
+The 'minute' parameter ("-1") to DateTime::new did not pass the 'an integer between 0 and 59' callback
+ at /usr/lib/x86_64-linux-gnu/perl5/5.22/DateTime.pm line 197.
+        DateTime::new(undef, "year", 2016, "month", 10, "day", 16, "hour", 22, ...) called at /usr/share/perl5/DateTime/Astro/Sunrise.pm line 104
+        DateTime::Astro::Sunrise::sunrise(DateTime::Astro::Sunrise=HASH(0x2529628), DateTime=HASH(0x29cbf78)) called at ./foocal line 310
+        main::estimate_sunset(1476590400) called at ./foocal line 727
+        main::determine_hebrew_date() called at ./foocal line 804
