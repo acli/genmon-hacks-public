@@ -1,0 +1,8 @@
+#!/usr/bin/php
+<?php
+
+include '/home/ambrose/Documents/checkouts/reality/real.a/quotes.inc';
+
+print preg_replace('/&nbsp;/', ' ', preg_replace('/<[^<>]*>/', '', get_random_quote(0)));
+
+?>

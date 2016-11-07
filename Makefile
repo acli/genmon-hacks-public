@@ -1,4 +1,4 @@
-bin_targets=foocal genstats tzdate
+bin_targets=foocal genstats tzdate fortune
 sbin_targets=
 
 all:
