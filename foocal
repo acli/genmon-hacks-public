@@ -792,6 +792,37 @@ sub format_hebrew_date ($) {
   return $it;
 }
 
+sub usage (;$) {
+  my($st) = @_;
+  my $h = $st? *STDERR: *STDOUT;
+  print $h <<EOF;
+Usage: $0 [OPTION]...
+Display date and time information in a non-mainstream calendar.
+
+  -d, --decimals=N            Display N decimal places for fractional ancient
+                              Chinese centidays (used only when decaminutes
+                              are not enabled)
+  -M, --decaminutes           Enable display of ancient Chinese decaminutes
+                              (and disable display of fractional centidays)
+  -m, --minutes               Enable display of Western "planetary" minutes (and
+                              ancient Chinese minutes if decaminutes are enabled)
+  -s, --seconds               Enable display of Western "planetary" seconds
+  -Q, --enable-qing-quarters  Use the Qing quarters system (identical to modern
+                              quarters) instead of the ancient centiday system
+  -p, --enable-planetary=all  Enable the Western "planetary" system and display
+                              current time in addition to the equivalent zodiac
+  -p, --enable-planetary=minimal
+                              Enable the Western "planetary" system but display
+                              only the zodiac corresponding to the current hour
+      --iconic                Use zodiac symbols
+      --symbolic              Use zodiac names
+
+Note that Chinese and Hebrew dates and times are always shown. Western "planetary"
+times are shown only when enabled.
+EOF
+  exit $st;
+}
+
 Getopt::Long::config('bundling');
 GetOptions(
   'd|decimals=i' => \$decimals,
@@ -807,7 +838,8 @@ GetOptions(
   'z|zh|chinese|kanji' => \$enable_chinese,
   'iconic' => sub { $representation = 'icon' },
   'symbolic' => sub { $representation = 'name' },
-) || exit(1);
+  'help' => \&usage,
+) || usage(1);
 $lang = $enable_chinese? 'zh': 'en';
 
 binmode STDIN, ':utf8';
