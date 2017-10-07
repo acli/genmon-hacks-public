@@ -209,58 +209,72 @@ use vars qw( %hebrew_months );
 %hebrew_months = (
   'Nisan' => {
     'zh' => '樂',
+    'zh' => '八',
     'en' => 'Nisan',
   },
   'Iyyar' => {
     'zh' => '愛',
+    'zh' => '九',
     'en' => 'Iyyar',
   },
   'Sivan' => {
     'zh' => '築',
+    'zh' => '十',
     'en' => 'Sivan',
   },
   'Tamuz' => {
     'zh' => '穫',
+    'zh' => '11',
     'en' => 'Tammuz',
   },
   'Av' => {
     'zh' => '熟',
+    'zh' => '12',
     'en' => 'Av',
   },
   'Elul' => {
     'zh' => '酹',
+    'zh' => '13',
     'en' => 'Elul',
   },
   'Tishrei' => {
     'zh' => '施',
+    'zh' => '正',
     'en' => 'Tishrei',
   },
   'Cheshvan' => {
     'zh' => '甦',
+    'zh' => '二',
     'en' => 'Cheshvan',
   },
   'Kislev' => {
     'zh' => '孕',
+    'zh' => '三',
     'en' => 'Kislev',
   },
   'Tevet' => {
     'zh' => '息',
+    'zh' => '四',
     'en' => 'Tevet',
   },
   "Sh'vat" => {
     'zh' => '洪',
+    'zh' => '五',
     'en' => 'Shevat',
   },
   'Adar' => {
     'zh' => '魔',
+    'zh' => '六',
     'en' => 'Adar',
   },
   'Adar I' => {
     'zh' => '閏魔',
+    'zh' => '閏七',
     'en' => 'Adar I',
   },
   'Adar' => {
     'zh II' => '魔',
+    'zh II' => '七',
     'en' => 'Adar II',
   },
 );
