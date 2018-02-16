@@ -269,8 +269,8 @@ use vars qw( %hebrew_months );
     'en' => 'Adar I',
   },
   'Adar' => {
-    'zh II' => '魔',
-    'zh II' => '六',
+    'zh' => '魔',
+    'zh' => '六',
     'en' => 'Adar II',
   },
 );
@@ -775,6 +775,7 @@ sub format_hebrew_date ($) {
   my($data) = @_;
   my($year, $month, $day, $hour) = @$data;
   my $it;
+  print STDERR "DEBUG: year=$year, month=$month, day=$day, hour=$hour\n" if $debug;
   if ($enable_chinese) {
     $it = sprintf('%d年%s月%d日%s間%d時', $year, $hebrew_months{$month}->{$lang}, $day, ($hour < 13? '夜': '日'), ($hour - 1)%12 + 1);
     if ($hour <= 12) {
