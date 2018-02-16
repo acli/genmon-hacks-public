@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vi:set sw=2 ai sm:
 #
-# Copyright 2016 by Ambrose Li <ambrose.li@gmail.com>
+# Copyright 2016-2018 by Ambrose Li <ambrose.li@gmail.com>
 # The primary purpose of this script is to figure out the year number in the Chinese system
 # so that I can name my CV's without having to look up two web pages.
 # Everything else is just for kicks =P
@@ -26,6 +26,7 @@ use Getopt::Long;
 use Data::Dumper;
 
 use vars qw( $fake );
+use vars qw( $debug );
 use vars qw( $enable_seconds );
 use vars qw( $enable_qing_quarters );
 use vars qw( $enable_planetary $planetary_omit_details );
@@ -356,8 +357,8 @@ use vars qw( %chinese_digits );
 );
 sub parse_chinese_number ($) {
   my($s) = @_;
-  my($tens, $units) = ($1, $2) if $s =~ /^(\S?)(\S)$/;
-  return $chinese_digits{$tens} + $chinese_digits{$units};
+  my($tens, $units) = ($chinese_digits{$1}, $chinese_digits{$2}) if $s =~ /^(\S?)(\S)$/;
+  return $units == 10? $tens*10: $tens + $units;
 }
 
 sub read_ini ($) {
@@ -564,6 +565,7 @@ sub determine_chinese_date () {
 	my $lunar_i = trim substr($data, $c_lunar, $w_lunar);
 	my $wday_i = trim substr($data, $c_wday, $w_wday);
 	my $solar_i = trim substr($data, $c_term);
+	print STDERR "DEBUG: greg_i=($greg_i), lunar_i=($lunar_i), wday_i=($wday_i), solar_i=($solar_i)\n";
       last if defined $year && defined $month && defined $day;
 	if ($lunar_i =~ /^\d+$/) {
 	  $current_day = $lunar_i + 0;
@@ -816,6 +818,7 @@ Display date and time information in a non-mainstream calendar.
                               only the zodiac corresponding to the current hour
       --iconic                Use zodiac symbols
       --symbolic              Use zodiac names
+      --debug                 Produce debugging output
 
 Note that Chinese and Hebrew dates and times are always shown. Western "planetary"
 times are shown only when enabled.
@@ -825,6 +828,7 @@ EOF
 
 Getopt::Long::config('bundling');
 GetOptions(
+  'debug' => \$debug,
   'd|decimals=i' => \$decimals,
   'M|enable-decaminutes|decaminutes' => \$enable_decaminutes,
   'm|enable-minutes|minutes' => \$enable_minutes,
