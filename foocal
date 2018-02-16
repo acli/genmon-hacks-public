@@ -565,7 +565,7 @@ sub determine_chinese_date () {
 	my $lunar_i = trim substr($data, $c_lunar, $w_lunar);
 	my $wday_i = trim substr($data, $c_wday, $w_wday);
 	my $solar_i = trim substr($data, $c_term);
-	print STDERR "DEBUG: greg_i=($greg_i), lunar_i=($lunar_i), wday_i=($wday_i), solar_i=($solar_i)\n";
+	print STDERR "DEBUG: greg_i=($greg_i), lunar_i=($lunar_i), wday_i=($wday_i), solar_i=($solar_i)\n" if $debug;
       last if defined $year && defined $month && defined $day;
 	if ($lunar_i =~ /^\d+$/) {
 	  $current_day = $lunar_i + 0;
