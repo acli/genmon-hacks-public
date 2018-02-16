@@ -210,32 +210,32 @@ use vars qw( %hebrew_months );
 %hebrew_months = (
   'Nisan' => {
     'zh' => '樂',
-    'zh' => '八',
+    'zh' => '七',
     'en' => 'Nisan',
   },
   'Iyyar' => {
     'zh' => '愛',
-    'zh' => '九',
+    'zh' => '八',
     'en' => 'Iyyar',
   },
   'Sivan' => {
     'zh' => '築',
-    'zh' => '十',
+    'zh' => '九',
     'en' => 'Sivan',
   },
   'Tamuz' => {
     'zh' => '穫',
-    'zh' => '11',
+    'zh' => '十',
     'en' => 'Tammuz',
   },
   'Av' => {
     'zh' => '熟',
-    'zh' => '12',
+    'zh' => '11',
     'en' => 'Av',
   },
   'Elul' => {
     'zh' => '酹',
-    'zh' => '13',
+    'zh' => '12',
     'en' => 'Elul',
   },
   'Tishrei' => {
@@ -263,19 +263,14 @@ use vars qw( %hebrew_months );
     'zh' => '五',
     'en' => 'Shevat',
   },
-  'Adar' => {
-    'zh' => '魔',
-    'zh' => '六',
-    'en' => 'Adar',
-  },
   'Adar I' => {
     'zh' => '閏魔',
-    'zh' => '閏七',
+    'zh' => '閏六',
     'en' => 'Adar I',
   },
   'Adar' => {
     'zh II' => '魔',
-    'zh II' => '七',
+    'zh II' => '六',
     'en' => 'Adar II',
   },
 );
