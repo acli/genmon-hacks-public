@@ -353,7 +353,7 @@ use vars qw( %chinese_digits );
 sub parse_chinese_number ($) {
   my($s) = @_;
   my($tens, $units) = ($chinese_digits{$1}, $chinese_digits{$2}) if $s =~ /^(\S?)(\S)$/;
-  return $units == 10? $tens*10: $tens + $units;
+  return ($units == 10 && defined $tens)? $tens*10: $tens + $units;
 }
 
 sub read_ini ($) {
@@ -569,6 +569,7 @@ sub determine_chinese_date () {
 	  $current_year = $reference_year_number if $current_month == 1;
 	} elsif ($lunar_i =~ /^初(\S+)/ || $lunar_i =~ /^((?!初)\S+)(?<!月)$/) {
 	  $current_day = parse_chinese_number $1;
+	  print STDERR "DEBUG: input day ($1), parsed $current_day\n" if $debug;
 	} elsif ($lunar_i =~ /^(\S+)月/) {
 	  $current_month = ($1 eq '正')? 1: parse_chinese_number $1;
 	  $current_year = $reference_year_number if $current_month == 1;
