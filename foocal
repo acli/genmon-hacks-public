@@ -21,7 +21,7 @@ use utf8;
 
 use POSIX;
 use DateTime;
-use Astro::Sunrise;
+eval { require DateTime::Astro::Sunrise; };
 use Getopt::Long;
 use Data::Dumper;
 
@@ -307,7 +307,7 @@ sub estimate_sunrise ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
-  my $sunrise = Astro::Sunrise->new($lat, $lon, undef, 1);
+  my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
   my $tmp = ($sunrise->sunrise($dt))[0];
   return $tmp->strftime('%s');
 }
@@ -316,7 +316,7 @@ sub estimate_sunset ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
-  my $sunrise = Astro::Sunrise->new($lat, $lon, undef, 1);
+  my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
   my $tmp = ($sunrise->sunrise($dt))[1];
   return $tmp->strftime('%s');
 }
