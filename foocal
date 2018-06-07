@@ -21,7 +21,7 @@ use utf8;
 
 use POSIX;
 use DateTime;
-eval { require DateTime::Astro::Sunrise; };
+use DateTime::Event::Sunrise;
 use Getopt::Long;
 use Data::Dumper;
 
@@ -750,7 +750,9 @@ sub determine_hebrew_date () {
       no integer;
       my $slice = ($slice_end - $slice_start)/12;
       my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($daybreak + 12*3600); # pick something unambiguous
-      my @cmd = ('/usr/local/bin/hebcal', '-T',
+      my $hebcal = -f '/usr/bin/hebcal'? '/usr/bin/hebcal': '/usr/local/bin/hebcal';
+      print STDERR "DEBUG: hebcal=$hebcal\n" if $debug;
+      my @cmd = ($hebcal, '-T',
 	  '-l', eval { no integer; sprintf('%d,%d', $lat, int(60*$lat)%60) },
 	  '-L', eval { no integer; sprintf('%d,%d', $lon, int(60*$lon)%60) }, $mon + 1, $mday, $year + 1900);
 
