@@ -21,7 +21,16 @@ use utf8;
 
 use POSIX;
 use DateTime;
-use DateTime::Event::Sunrise;
+
+use vars qw( $use_event_sunrise );
+BEGIN {
+  if (!eval { require DateTime::Astro::Sunrise; }) {
+    $use_event_sunrise = 1;
+    require DateTime::Event::Sunrise;
+  }
+}
+sub sunrise_new ($$$$) { my($a, $b, $c, $d) = @_; return $use_event_sunrise? DateTime::Event::Sunrise->new($a, $b, $c, $d): DateTime::Astro::Sunrise->new($a, $b, $c, $d); }
+
 use Getopt::Long;
 use Data::Dumper;
 
@@ -307,7 +316,7 @@ sub estimate_sunrise ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
-  my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
+  my $sunrise = sunrise_new($lat, $lon, undef, 1);
   my $tmp = ($sunrise->sunrise($dt))[0];
   return $tmp->strftime('%s');
 }
@@ -316,7 +325,7 @@ sub estimate_sunset ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
-  my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
+  my $sunrise = sunrise_new($lat, $lon, undef, 1);
   my $tmp = ($sunrise->sunrise($dt))[1];
   return $tmp->strftime('%s');
 }
