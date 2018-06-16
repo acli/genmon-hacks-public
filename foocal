@@ -782,13 +782,14 @@ sub determine_hebrew_date () {
     if ($slice_start && $slice_end) {
       no integer;
       my $slice = ($slice_end - $slice_start)/12;
-      my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($daybreak + 12*3600); # pick something unambiguous
+      print STDERR "DEBUG: daybreak=$daybreak\n" if $debug;
+      my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($daybreak); # pick something unambiguous
       my $hebcal = -f '/usr/bin/hebcal'? '/usr/bin/hebcal': '/usr/local/bin/hebcal';
-      print STDERR "DEBUG: hebcal=$hebcal\n" if $debug;
       my @cmd = ($hebcal, '-T',
 	  '-l', eval { no integer; sprintf('%d,%d', $lat, int(60*$lat)%60) },
 	  '-L', eval { no integer; sprintf('%d,%d', $lon, int(60*$lon)%60) }, $mon + 1, $mday, $year + 1900);
 
+      print STDERR 'DEBUG: running: ', join(' ', @cmd), "\n" if $debug;
       my $pid = open(INPUT, '-|');
       my($year, $month, $day);
       if (defined $pid && $pid) {
