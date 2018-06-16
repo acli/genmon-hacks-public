@@ -896,7 +896,7 @@ print format_chinese_date $c;
 print $sysline_mode? ' | ': "\n";
 if ($enable_planetary) {
   print format_planetary_hour $p;
-  print " | ";
+  print "| ";
 }
 if (defined $h) {
   print format_hebrew_date $h;
