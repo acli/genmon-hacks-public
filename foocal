@@ -42,6 +42,7 @@ use vars qw( $enable_planetary $planetary_omit_details );
 use vars qw( $enable_chinese $lang );
 use vars qw( $enable_decaminutes $enable_minutes );
 use vars qw( $decimals );
+use vars qw( $sysline_mode );
 $decimals = 2;
 
 use vars qw( $representation );
@@ -221,66 +222,79 @@ use vars qw( %hebrew_months );
     'zh' => '樂',
     'zh' => '七',
     'en' => 'Nisan',
+    'xx' => '7',
   },
   'Iyyar' => {
     'zh' => '愛',
     'zh' => '八',
     'en' => 'Iyyar',
+    'xx' => '8',
   },
   'Sivan' => {
     'zh' => '築',
     'zh' => '九',
     'en' => 'Sivan',
+    'xx' => '9',
   },
   'Tamuz' => {
     'zh' => '穫',
     'zh' => '十',
     'en' => 'Tammuz',
+    'xx' => '10',
   },
   'Av' => {
     'zh' => '熟',
     'zh' => '11',
     'en' => 'Av',
+    'xx' => '11',
   },
   'Elul' => {
     'zh' => '酹',
     'zh' => '12',
     'en' => 'Elul',
+    'xx' => '12',
   },
   'Tishrei' => {
     'zh' => '施',
     'zh' => '正',
     'en' => 'Tishrei',
+    'xx' => '1',
   },
   'Cheshvan' => {
     'zh' => '甦',
     'zh' => '二',
     'en' => 'Cheshvan',
+    'xx' => '2',
   },
   'Kislev' => {
     'zh' => '孕',
     'zh' => '三',
     'en' => 'Kislev',
+    'xx' => '3',
   },
   'Tevet' => {
     'zh' => '息',
     'zh' => '四',
     'en' => 'Tevet',
+    'xx' => '4',
   },
   "Sh'vat" => {
     'zh' => '洪',
     'zh' => '五',
     'en' => 'Shevat',
+    'xx' => '5',
   },
   'Adar I' => {
     'zh' => '閏魔',
     'zh' => '閏六',
     'en' => 'Adar I',
+    'xx' => '6a',
   },
   'Adar' => {
     'zh' => '魔',
     'zh' => '六',
     'en' => 'Adar II',
+    'xx' => '6b',
   },
 );
 
@@ -607,7 +621,7 @@ sub format_chinese_date ($) {
     my $minute = eval { no integer; ($centiday*60)%60 };
     my $decaminute = $minute/10;
     $minute %= 10 if $enable_decaminutes;
-    if ($enable_chinese) {
+    if ($enable_chinese && !$sysline_mode) {
       $it = sprintf '%s(%s)年%s月%s日', stem_branch_name($year), get_representation($branches[($year - 1)%12]), $month, $day;
       if ($enable_decaminutes) {
 	$it .= sprintf '%d刻', $centiday;
@@ -645,18 +659,25 @@ sub format_chinese_date ($) {
       } else {
 	$it .= sprintf '+%.*f°', $decimals, $centiday;
       }
-      $it .= sprintf ' (%s, %s)', stem_branch_name($year), get_representation($branches[($year - 1)%12]);
+      if (!$sysline_mode) {
+	$it .= sprintf(' (%s, %s)', stem_branch_name($year), get_representation($branches[($year - 1)%12]));
+      }
       $it .= sprintf ' (%s)', $solar_term if defined $solar_term;
       if ($enable_qing_quarters) {
 	$it .= sprintf ' %d%s%d', $chinese_hour, ($quarter < 5? 'a': 'b'), ($quarter - 1) % 4;
       }
-      $it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
+      if (!$sysline_mode) {
+	$it .= sprintf ' (%s)', $branches[$chinese_hour - 1]->{$lang};
+      }
       if ($chinese_hour >= 11 || $chinese_hour <= 3) {
-	$it .= sprintf('(%s watch)', ordinal((($chinese_hour - 10) + 12)%12));
+	my $watch = (($chinese_hour - 10) + 12)%12;
+	$it .= $sysline_mode? sprintf('(%d)', $watch): sprintf('(%s watch)', ordinal($watch));
       }
     }
     if (defined $deciday) {
-      if ($enable_chinese) {
+      if ($sysline_mode) {
+	$it .= sprintf(' %s+%d', ($deciday < 6? 'd': 'e'), ($deciday - 1)%5);
+      } elsif ($enable_chinese) {
 	$it .= sprintf(' %s:%s', ($deciday < 6? '晝': '夜'), (qw(朝 禺 中 晡 夕 甲 乙 丙 丁 戊)[$deciday - 1]));
       } else {
 	$it .= sprintf(' %s+%d', ($deciday < 6? 'morning': 'evening'), ($deciday - 1)%5);
@@ -715,10 +736,13 @@ sub format_planetary_hour ($) {
   no integer;
   my $m = int(60*($planetary_hour - 1))%60 + 1;
   my $s = int(3600*($planetary_hour - 1))%60 + 1;
-  my $fmt = $enable_seconds? '%02d:%02d:%02d ': '%02d:%02d%0.0s ';
+  my $fmt = $enable_seconds? '%02d:%02d:%02d': '%02d:%02d%0.0s';
   my $it = sprintf('%d+', $wday + 1) unless $planetary_omit_details;
   $it .= sprintf($fmt, $planetary_hour, $m, $s) unless $planetary_omit_details;
-  $it .= sprintf('(%s)', get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
+  my $style = $sysline_mode? 'icon': $representation;
+  local $representation = $style;
+  $fmt = $sysline_mode? ' %s': ' (%s)';
+  $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
   return $it;
 }
 
@@ -788,7 +812,12 @@ sub format_hebrew_date ($) {
   my($year, $month, $day, $hour) = @$data;
   my $it;
   print STDERR "DEBUG: year=$year, month=$month, day=$day, hour=$hour\n" if $debug;
-  if ($enable_chinese) {
+  if ($sysline_mode) {
+    $it = sprintf('%d/%d/%d %s:%d', $year, $hebrew_months{$month}->{'xx'}, $day, ($hour < 13? 'e': 'd'), ($hour - 1)%12 + 1);
+    if ($hour <= 12) {
+      $it .= sprintf('(%d)', ordinal(($hour - 1)/3 + 1));
+    }
+  } elsif ($enable_chinese) {
     $it = sprintf('%d年%s月%d日%s間%d時', $year, $hebrew_months{$month}->{$lang}, $day, ($hour < 13? '夜': '日'), ($hour - 1)%12 + 1);
     if ($hour <= 12) {
       $it .= sprintf('(%d更)', ordinal(($hour - 1)/3 + 1));
@@ -824,6 +853,7 @@ Display date and time information in a non-mainstream calendar.
   -p, --enable-planetary=minimal
                               Enable the Western "planetary" system but display
                               only the zodiac corresponding to the current hour
+  -w, --sysline               Terse format suitable for use as a sysline .who file
       --iconic                Use zodiac symbols
       --symbolic              Use zodiac names
       --debug                 Produce debugging output
@@ -847,6 +877,7 @@ GetOptions(
 	die "You must specify either \"all\" or \"minimal\"\n" unless $_[1] =~ /^(?:all|full|min(?:imal(?:istic)?)?)/;
 	$planetary_omit_details = 1 if $_[1] =~ /^min/;
       },
+  'w|sysline' => \$sysline_mode,
   'z|zh|chinese|kanji' => \$enable_chinese,
   'iconic' => sub { $representation = 'icon' },
   'symbolic' => sub { $representation = 'name' },
@@ -862,7 +893,7 @@ my $c = determine_chinese_date;
 my $h = determine_hebrew_date;
 my $p = determine_planetary_hour;
 print format_chinese_date $c;
-print "\n";
+print $sysline_mode? ' | ': "\n";
 if ($enable_planetary) {
   print format_planetary_hour $p;
   print " | ";
