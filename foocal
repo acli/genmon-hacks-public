@@ -29,7 +29,6 @@ BEGIN {
     require DateTime::Event::Sunrise;
   }
 }
-sub sunrise_new ($$$$) { my($a, $b, $c, $d) = @_; return $use_event_sunrise? DateTime::Event::Sunrise->new($a, $b, $c, $d): DateTime::Astro::Sunrise->new($a, $b, $c, $d); }
 
 use Getopt::Long;
 use Data::Dumper;
@@ -38,11 +37,13 @@ use vars qw( $fake );
 use vars qw( $debug );
 use vars qw( $enable_seconds );
 use vars qw( $enable_qing_quarters );
+use vars qw( $enable_hebcal );
 use vars qw( $enable_planetary $planetary_omit_details );
 use vars qw( $enable_chinese $lang );
 use vars qw( $enable_decaminutes $enable_minutes );
 use vars qw( $decimals );
 use vars qw( $sysline_mode );
+$enable_hebcal = 1;
 $decimals = 2;
 
 use vars qw( $representation );
@@ -330,8 +331,14 @@ sub estimate_sunrise ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
-  my $sunrise = sunrise_new($lat, $lon, undef, 1);
-  my $tmp = ($sunrise->sunrise($dt))[0];
+  my $tmp;
+  if ($use_event_sunrise) {
+    my $sunrise = DateTime::Event::Sunrise->new(latitude => $lat, longitude => $lon, precise => 1);
+    $tmp = $sunrise->sunrise_sunset_span($dt)->start;
+  } else {
+    my $sunrise = sunrise_new($lat, $lon, undef, 1);
+    $tmp = ($sunrise->sunrise($dt))[0];
+  }
   return $tmp->strftime('%s');
 }
 
@@ -339,8 +346,14 @@ sub estimate_sunset ($) {
   my($t) = @_;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dt = DateTime->new(year => $year + 1900, month => $mon + 1, day => $mday);
-  my $sunrise = sunrise_new($lat, $lon, undef, 1);
-  my $tmp = ($sunrise->sunrise($dt))[1];
+  my $tmp;
+  if ($use_event_sunrise) {
+    my $sunrise = DateTime::Event::Sunrise->new(latitude => $lat, longitude => $lon, precise => 1);
+    $tmp = $sunrise->sunrise_sunset_span($dt)->end;
+  } else {
+    my $sunrise = sunrise_new($lat, $lon, undef, 1);
+    $tmp = ($sunrise->sunrise($dt))[1];
+  }
   return $tmp->strftime('%s');
 }
 
@@ -869,6 +882,7 @@ Getopt::Long::config('bundling');
 GetOptions(
   'debug' => \$debug,
   'd|decimals=i' => \$decimals,
+  'H|disable-hebrew' => sub { $enable_hebcal = 0; },
   'M|enable-decaminutes|decaminutes' => \$enable_decaminutes,
   'm|enable-minutes|minutes' => \$enable_minutes,
   's|enable-seconds|seconds' => \$enable_seconds,
@@ -894,13 +908,17 @@ my $c = determine_chinese_date;
 my $h = determine_hebrew_date;
 my $p = determine_planetary_hour;
 print format_chinese_date $c;
-print $sysline_mode? ' | ': "\n";
+my $sep = $sysline_mode? ' | ': "\n";
 if ($enable_planetary) {
+  print $sep;
   print format_planetary_hour $p;
-  print "| ";
+  $sep = "| ";
 }
 if (defined $h) {
-  print format_hebrew_date $h;
+  if ($enable_hebcal) {
+    print $sep;
+    print format_hebrew_date $h;
+  }
   print "\n";
 } else {
   print STDERR "DEBUG: no Hebrew date data, hebcal(1) might not be present\n" if $debug;
