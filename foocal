@@ -336,7 +336,7 @@ sub estimate_sunrise ($) {
     my $sunrise = DateTime::Event::Sunrise->new(latitude => $lat, longitude => $lon, precise => 1);
     $tmp = $sunrise->sunrise_sunset_span($dt)->start;
   } else {
-    my $sunrise = sunrise_new($lat, $lon, undef, 1);
+    my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
     $tmp = ($sunrise->sunrise($dt))[0];
   }
   return $tmp->strftime('%s');
@@ -351,7 +351,7 @@ sub estimate_sunset ($) {
     my $sunrise = DateTime::Event::Sunrise->new(latitude => $lat, longitude => $lon, precise => 1);
     $tmp = $sunrise->sunrise_sunset_span($dt)->end;
   } else {
-    my $sunrise = sunrise_new($lat, $lon, undef, 1);
+    my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
     $tmp = ($sunrise->sunrise($dt))[1];
   }
   return $tmp->strftime('%s');
