@@ -745,17 +745,20 @@ sub determine_planetary_hour () {
 # and http://www.renaissanceastrology.com/3rdplanetaryorder.html
 sub format_planetary_hour ($) {
   my($data) = @_;
-  my($planetary_hour, $wday, $t) = @$data;
-  no integer;
-  my $m = int(60*($planetary_hour - 1))%60 + 1;
-  my $s = int(3600*($planetary_hour - 1))%60 + 1;
-  my $fmt = $enable_seconds? '%02d:%02d:%02d': '%02d:%02d%0.0s';
-  my $it = sprintf('%d+', $wday + 1) unless $planetary_omit_details;
-  $it .= sprintf($fmt, $planetary_hour, $m, $s) unless $planetary_omit_details;
-  my $style = $sysline_mode? 'icon': $representation;
-  local $representation = $style;
-  $fmt = $sysline_mode? ' %s': ' (%s)';
-  $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
+  my $it;
+  if (defined $data) {
+    my($planetary_hour, $wday, $t) = @$data;
+    no integer;
+    my $m = int(60*($planetary_hour - 1))%60 + 1;
+    my $s = int(3600*($planetary_hour - 1))%60 + 1;
+    my $fmt = $enable_seconds? '%02d:%02d:%02d': '%02d:%02d%0.0s';
+    $it = sprintf('%d+', $wday + 1) unless $planetary_omit_details;
+    $it .= sprintf($fmt, $planetary_hour, $m, $s) unless $planetary_omit_details;
+    my $style = $sysline_mode? 'icon': $representation;
+    local $representation = $style;
+    $fmt = $sysline_mode? ' %s': ' (%s)';
+    $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
+  }
   return $it;
 }
 
