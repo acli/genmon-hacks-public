@@ -601,6 +601,7 @@ sub determine_chinese_date () {
 	if ($lunar_i =~ /^\d+$/) {
 	  $current_day = $lunar_i + 0;
 	} elsif ($lunar_i =~ /^(\d+)(?:st|nd|rd|th) Lunar Month/) {
+	  $current_day = 1;
 	  $current_month = $1 + 0;
 	  $current_year = $reference_year_number if $current_month == 1;
 	} elsif ($lunar_i =~ /^初(\S+)/ || $lunar_i =~ /^((?!初)\S+)(?<!月)$/) {
