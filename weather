@@ -93,6 +93,7 @@ sub get_feed_data () {
   last unless defined $s;
     chomp $s;
     $s =~ s/\&(?:#xB0|deg);/°/g;
+    $s =~ s/\b([Ii])nt'l\b/\1nternational/g;
     my $debug__orig_state = $state;
     if ($state eq STATE__INITIAL || $state eq STATE__LIMINAL) {
       if ($s =~ /^\s*<entry>\s*$/) {
@@ -159,9 +160,12 @@ sub display_weather_data ($) {
       push @warnings, [$warning, $details];
     }
   }
-  my($condition, $humidity, $temperature, $wind_direction, $wind_speed, $wind_gust, $wind, $aq);
+  my($condition, $observed_at, $humidity, $temperature, $wind_direction, $wind_speed, $wind_gust, $wind, $aq);
   if ($current->{'summary'} =~ /<b>Condition:<\/b>\s+(.*?)\s*<br\/>/s) {
     $condition = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Observed at:<\/b>\s+(.+?)\s*<br\/>/s) {
+    $observed_at = $1;
   }
   if ($current->{'summary'} =~ /<b>Humidity:<\/b>\s+(\d+)\s*\%\s*<br\/>/s) {
     $humidity = $1;
@@ -183,18 +187,36 @@ sub display_weather_data ($) {
   push @stuff, "$humidity\%" if defined $humidity;
   push @stuff, (defined $wind_direction? ($wind_direction, $wind_speed): $wind);
   if ($aq > 6) { # see https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/about.html
-    push @warnings, "AQ$aq";
+    push @warnings, ["AQ$aq"];
   } else {
     push @stuff, "AQ$aq";
   }
+  # see https://gitlab.xfce.org/panel-plugins/xfce4-genmon-plugin
+  # see also https://developer.gnome.org/pygtk/stable/pango-markup-language.html
   print '<txt>' if $genmon_mode;
   print $city_name;
   print sprintf(' (%s)', join(', ', map { $_->[0] } @warnings));
   print ': ';
   print "\n" unless $sysline_mode;
   print join(' ', @stuff);
-  print '</txt>' if $genmon_mode;
-  print "\n" unless $sysline_mode;
+  print "</txt>\n" if $genmon_mode;
+  if (!$sysline_mode) {
+    print "\n";
+    # The tooltip can't be too long, otherwise we just get a blank half-line at the top of the screen. Bummers.
+    print '<tool>' if $genmon_mode;
+    print "Observed at $observed_at";
+    print "\n";
+    for my $i (@{$data->{'forecasts'}}) {
+      my $forecast = $data->{'data'}->[$i]->{'title'};
+      my $details = $data->{'data'}->[$i]->{'summary'};
+      print "\n";
+      printf "Forecast: $forecast", $forecast;
+    last if $genmon_mode;
+      print "\n";
+      printf "%s\n", $details;
+    }
+    print "</tool>\n" if $genmon_mode;
+  }
 }
 
 sub usage (;$) {
