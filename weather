@@ -1,2 +1,240 @@
-w3m https://weather.gc.ca/city/pages/on-143_metric_e.html
-# alternate is https://weather.gc.ca/rss/city/on-143_e.xml
+#!/usr/bin/perl
+# vi:set sw=2 ai sm:
+#
+# Copyright 2021 by Ambrose Li <ambrose.li@gmail.com>
+# Pull weather data from official Environment Canada feed for use with genmon,
+# because my old xfce4-weather-plugin has stopped working
+#
+# Feed for Toronto is here: https://weather.gc.ca/rss/city/on-143_e.xml
+# I don't know how to get a feed for other cities or even how to get a list of valid cities
+
+# see https://stackoverflow.com/questions/6162484/why-does-modern-perl-avoid-utf-8-by-default for these crazy hacks
+# THERE ARE MORE CRAZY HACKS THERE FOR MORE COMPLEX PROJECTS!!
+use v5.12; # minimal for unicode string feature
+use v5.14; # //u modifier
+use utf8;
+use open qw( :encoding(UTF-8) :std );
+use charnames qw( :full :short );
+use feature "unicode_strings";
+
+use warnings qw( FATAL utf8 );
+use Encode qw( encode decode );
+@ARGV = map { decode("UTF-8", $_) } @ARGV if grep /\P{ASCII}/ => @ARGV;
+
+
+use strict;
+use integer;
+
+use POSIX ":sys_wait_h";
+use Data::Dumper;
+use Getopt::Long;
+
+use vars qw( $sysline_mode $genmon_mode );
+use vars qw( $debug $test_data_file );
+use vars qw( $lang );
+use vars qw( $representation );
+use vars qw( $city );
+$lang = 'en';
+$city = 'on-143';
+
+use vars qw( %conditions );
+%conditions = (
+  'Mostly Cloudy' => {
+    'icon' => '⛅', #U+26C5
+  },
+);
+
+
+sub STATE__INITIAL () { 'INITIAL' }
+sub STATE__ENTRY   () { 'ENTRY' }
+sub STATE__SUMMARY () { 'SUMMARY' }
+sub STATE__LIMINAL () { 'LIMINAL' }
+
+sub remove_cdata ($) {
+  my($s) = @_;
+  return $s =~ /^<!\[CDATA\[((?:(?!\]\]>).)*)\]\]>/s? $1: $s;
+}
+
+sub get_feed_data () {
+  my $data_dir = "$ENV{HOME}/.cache/weather";
+  my $data_file;
+  my $basename = "${city}_e.xml";
+  if (defined $test_data_file) {
+    $data_file = $test_data_file;
+    print STDERR "DEBUG: using test data from \"$data_file\"\n" if $debug;
+  } else {
+    if (!-d $data_dir) {
+      mkdir $data_dir or warn "$0: $data_dir: $!\n";
+    }
+    $data_file = "$data_dir/$basename";
+    my $use_cached_data = 0;
+    if (!-f $data_file) {
+      print STDERR "DEBUG: need to get new data because nothing was cached\n" if $debug;
+    } elsif (time - (stat $data_file)[9] > 300) {
+      print STDERR "DEBUG: need to get new data because cache was stale\n" if $debug;
+    } else {
+      print STDERR "DEBUG: using cached data\n" if $debug;
+      $use_cached_data = 1;
+    }
+    my @cmd = ('wget', '-q', '-O', $data_file, "https://weather.gc.ca/rss/city/${city}_e.xml");
+    print STDERR 'DEBUG: running: ', join(' ', @cmd), "\n" if $debug;
+    my $pid = fork;
+    die "$0: get_feed_data: $cmd[0]: fork: $!\n" unless defined $pid;
+    if (!$pid) {
+      exec {$cmd[0]} @cmd;
+      die "$0: get_feed_data: $cmd[0]: exec: $!\n";
+    }
+    wait; # otherwise we'll try to open the file before wget saves it
+  }
+  open(INPUT, '<:utf8', $data_file) or die "$0: $data_file: $!\n";
+  my $it = {};
+  for (my $state = STATE__INITIAL, my $i = -1, my $node;;) {
+    my $s = scalar <INPUT>;
+  last unless defined $s;
+    chomp $s;
+    $s =~ s/\&(?:#xB0|deg);/°/g;
+    my $debug__orig_state = $state;
+    if ($state eq STATE__INITIAL || $state eq STATE__LIMINAL) {
+      if ($s =~ /^\s*<entry>\s*$/) {
+	$state = STATE__ENTRY;
+	$node = undef;
+	$i += 1;
+      } elsif ($s =~ /^\s*<(title)>((?:(?!<\/\1>).)*) - Weather - Environment Canada<\/\1>\s*$/) {
+	$it->{'city_name'} = $2;
+      }
+    } elsif ($state eq STATE__ENTRY) {
+      if ($s =~ /^\s*<\/entry>\s*$/) {
+	$state = STATE__LIMINAL;
+	push @{$it->{'data'}}, $node;
+	push @{$it->{'warnings'}}, $i if $node->{'category'} eq 'Warnings and Watches';
+	push @{$it->{'forecasts'}}, $i if $node->{'category'} eq 'Weather Forecasts';
+	$it->{'current'} = $i if $node->{'category'} eq 'Current Conditions';
+      } elsif ($s =~ /^\s*<([a-z]+)>((?:(?!<\/\1>).)*)<\/\1>\s*$/) {			# single-line non-self-closing
+	warn "$0: Overwriting existing key $1\n" if defined $node->{$1};
+	$node->{$1} = $2;
+	print STDERR "DEBUG: title is \"$2\"\n" if $debug && $1 eq 'title';
+      } elsif ($s =~ /^\s*<(summary) type="html">((?:(?!<\/\1>).)*)<\/\1>\s*$/) {	# single-line non-self-closing
+	$node->{$1} = remove_cdata($2);
+      } elsif ($s =~ /^\s*<(summary) type="html">((?:(?!<\/\1>).)*)\s*$/) {		# multi-line non-self-closing
+	$node->{$1} = $2;
+	$state = STATE__SUMMARY;
+      } elsif ($s =~ /^\s*<(link) type="([^""]+)" href="([^""]+)"\/>\s*$/) {
+	;
+      } elsif ($s =~ /^\s*<(category) term="([^""]+)"\/>\s*$/) {
+	$node->{$1} = $2;
+	print STDERR "DEBUG: node type is \"$2\"\n" if $debug && $1 eq 'category';
+      } else {
+	warn "$0: Warning: Unhandle input $s\n";
+      }
+    } elsif ($state eq STATE__SUMMARY) {
+      if ($s =~ /^\s*(.*?)<\/summary>\s*$/) {
+	$node->{'summary'} .= $1;
+	$node->{'summary'} = remove_cdata($node->{'summary'});
+	$state = STATE__ENTRY;
+      } elsif ($s =~ /^\s*(.*?)\s*$/) {
+	$node->{'summary'} .= $1;
+      } else {
+	die "$0: Internal error: Presumably-unreachable else case reached"; # no \n
+      }
+    } else {
+      die "$0: Internal error: Reached unknown state \"$state\"\n";
+    }
+    print STDERR "DEBUG: switched state from $debug__orig_state to $state\n" if $debug && $debug__orig_state ne $state;
+  }
+  print STDERR "DEBUG: end of feed reached\n" if $debug;
+  close INPUT;
+  return $it;
+}
+
+sub display_weather_data ($) {
+  my($data) = @_;
+  my $current = $data->{'data'}->[$data->{'current'}];
+  my $city_name = $data->{'city_name'};
+  my @warnings;
+  if (defined $data->{'warnings'}) {
+    for my $i (@{$data->{'warnings'}}) {
+      my $warning = $data->{'data'}->[$i]->{'title'};
+      my $details = $data->{'data'}->[$i]->{'summary'};
+      $warning =~ s/\s*,\s*$city_name\s*$//s;
+      push @warnings, [$warning, $details];
+    }
+  }
+  my($condition, $humidity, $temperature, $wind_direction, $wind_speed, $wind_gust, $wind, $aq);
+  if ($current->{'summary'} =~ /<b>Condition:<\/b>\s+(.*?)\s*<br\/>/s) {
+    $condition = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Humidity:<\/b>\s+(\d+)\s*\%\s*<br\/>/s) {
+    $humidity = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Temperature:<\/b>\s+(.*?)\s*<br\/>/s) {
+    $temperature = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Wind:<\/b>\s+(.*?)\s*<br\/>/s) {
+    $wind = $1;
+    ($wind_direction, $wind_speed, $wind_gust) = ($1, $2, $3) if $wind =~ /^([NEWS]+) (\d+) km\/h(?: gust (\d+) km\/h)?$/;
+  }
+  if ($current->{'summary'} =~ /<b>Air Quality Health Index:<\/b>\s+(\d+)\s*<br\/>/s) {
+    $aq = $1;
+  }
+  my $use_icons = ($genmon_mode || $representation eq 'icon');
+  my @stuff;
+  push @stuff, (($use_icons && defined $conditions{$condition}->{'icon'})? $conditions{$condition}->{'icon'}: $condition);
+  push @stuff, $temperature;
+  push @stuff, "$humidity\%" if defined $humidity;
+  push @stuff, (defined $wind_direction? ($wind_direction, $wind_speed): $wind);
+  if ($aq > 6) { # see https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/about.html
+    push @warnings, "AQ$aq";
+  } else {
+    push @stuff, "AQ$aq";
+  }
+  print '<txt>' if $genmon_mode;
+  print $city_name;
+  print sprintf(' (%s)', join(', ', map { $_->[0] } @warnings));
+  print ': ';
+  print "\n" unless $sysline_mode;
+  print join(' ', @stuff);
+  print '</txt>' if $genmon_mode;
+  print "\n" unless $sysline_mode;
+}
+
+sub usage (;$) {
+  my($st) = @_;
+  my $h = $st? *STDERR: *STDOUT;
+  print $h <<EOF;
+Usage: $0 [OPTION]...
+Display official Environment Canada weather info for Toronto.
+
+  -I, --data-file=FILE        Use test feed data in specified FILE
+  -g, --genmon                Terse format suitable as two-line genmon input
+      --iconic                Use zodiac symbols (DO NOT USE)
+  -w, --sysline               Terse format suitable as a sysline .who file
+  -z, --chinese, --kanji      Use kanji instead of English (DO NOT USE)
+      --debug                 Produce lots of debugging output
+
+Note that there is no way to pull weather data for any other city; the only
+supported city is Toronto.
+EOF
+  exit $st;
+}
+
+Getopt::Long::config('bundling');
+GetOptions(
+  'debug' => \$debug,
+  'I|data-file=s' => \$test_data_file,
+  'g|genmon' => \$genmon_mode,
+  'w|sysline' => \$sysline_mode,
+  'z|zh|chinese|kanji' => sub { $lang = 'zh'; },
+  'iconic' => sub { $representation = 'icon' },
+  'symbolic' => sub { $representation = 'name' },
+  'help' => \&usage,
+) || usage(1);
+
+binmode STDIN, ':utf8';
+binmode STDOUT, ':utf8';
+binmode STDERR, ':utf8';
+
+my $data = get_feed_data;
+print STDERR 'DEBUG: parsed data is ' . Dumper $data if $debug;
+
+display_weather_data $data;
+
