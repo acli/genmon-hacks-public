@@ -814,7 +814,7 @@ sub format_chinese_date ($) {
       my $div = ($deciday - 1)%5 + 1;
       if ($genmon_mode) {
 	$it .= sprintf(' %s%d', ($deciday < 6? '☼': '☽'), $div);
-	$tooltip .= sprintf ', %s %s deciday', ($deciday < 6? 'daytime': 'nighttime'), ordinal($deciday);
+	$tooltip .= sprintf ', %s %s deciday*', ($deciday < 6? 'daytime': 'nighttime'), ordinal($deciday);
       } elsif ($sysline_mode) {
 	$it .= sprintf(' %s+%d', ($deciday < 6? 'd': 'e'), $div);
       } elsif ($enable_chinese) {
@@ -843,6 +843,7 @@ sub format_chinese_date ($) {
 	$it .= 'w' if $sysline_mode || $subwatch;
 	$it .= $subwatch if $subwatch;
 	$tooltip .= sprintf '%s fifth of %s watch', ordinal($subwatch), ordinal($watch) if $genmon_mode;
+	$tooltip .= '*' if $genmon_mode && !$enable_nonproportional_watches;
       } else {
 	$it .= sprintf('%d past ', $subwatch) if $subwatch;
 	$it .= sprintf('%s watch', $watch);
@@ -911,7 +912,7 @@ sub format_planetary_hour ($) {
     local $representation = $style;
     $fmt = $sysline_mode? ' %s': ' (%s)';
     $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
-    $tooltip = sprintf 'day of %s, %s hour (hour of %s)',
+    $tooltip = sprintf 'day of %s, %s hour* (hour* of %s)',
 	get_representation($planets[($wday + 5*(int($wday) - 1))%7], 'name', 1),
 	ordinal($planetary_hour),
 	get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7], 'name', 1);
@@ -1011,7 +1012,7 @@ sub format_hebrew_date ($) {
     }
   }
   if ($genmon_mode) {
-    $tooltip = sprintf('%s of %s (month %s), AM %d, %stime %s hour', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $year, ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
+    $tooltip = sprintf('%s of %s (month %s), AM %d, %stime %s hour*', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $year, ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
   }
   return wantarray? ($it, $tooltip): $it;
 }
@@ -1104,6 +1105,7 @@ for my $s (($c1, $p1, $h1)) {
 }
 print "</txt>\n" if $genmon_mode;
 if (defined $c2 || defined $p2 || defined $h2) {
+  my $note_needed = 0;
   $sep = undef;
   print '<tool>' if $genmon_mode;
   for my $spec ((['old Chinese systems', $c2], ['Western astrology', $p2], ['the Hebrew system', $h2])) {
@@ -1112,9 +1114,11 @@ if (defined $c2 || defined $p2 || defined $h2) {
       print $sep if defined $sep;
       print "In $label:\n" if defined $label;
       print $s;
+      $note_needed = 1 if $s =~ /\*/;
     }
     $sep = "\n\n";
   }
+  print "\n_______\n* proportional hours" if $note_needed;
   print "</tool>\n" if $genmon_mode;
 }
 print STDERR "DEBUG: no Hebrew date data, hebcal(1) might not be present\n" if $debug && !defined $h1;
