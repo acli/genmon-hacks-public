@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 # vi:set sw=2 ai sm:
 #
-# Copyright 2016-2018 by Ambrose Li <ambrose.li@gmail.com>
+# Copyright 2016-2018, 2021 by Ambrose Li <ambrose.li@gmail.com>
 # The primary purpose of this script is to figure out the year number in the Chinese system
 # so that I can name my CV's without having to look up two web pages.
 # Everything else is just for kicks =P
