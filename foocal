@@ -738,7 +738,7 @@ sub determine_chinese_date () {
       my $quarter = $min/15 + 1;
       my $centiday = eval { no integer; ($t - $midnight)/864 };
       $quarter += 4 if $hour%2 == 0;
-      $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday];
+      $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday, $wday];
       ((3+1)%24)/2+1
     }
   }
@@ -749,7 +749,7 @@ sub format_chinese_date ($) {
   my($data) = @_;
   my $it;
   my $tooltip;
-  my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday) = @$data;
+  my($year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday, $wday) = @$data;
   if (defined $year) {
     my $minute = eval { no integer; ($centiday*60)%60 };
     my $decaminute = $minute/10;
@@ -776,6 +776,7 @@ sub format_chinese_date ($) {
       $it .= ')';
     } else {
       $it .= sprintf '%s/%s/%s', $year, $month, $day;
+      $tooltip .= sprintf('%s, ', ($wday? sprintf('%s-past-the-week', ordinal($wday)): 'Day of the week'));
       $tooltip .= sprintf('%s of month %s, %s (year %d in the current sexagenary cycle)',
 	  ordinal($day), $month, stem_branch_name($year), $year) if $genmon_mode;
 
@@ -972,7 +973,7 @@ sub determine_hebrew_date () {
 	exec {$cmd[0]} @cmd;
 	die "$0: determine_hebrew_date: exec: $!\n";
       }
-      $it = [$year, $month, $day, $starting_hour + ($t - $slice_start)/$slice, $wday, $t];
+      $it = [$year, $month, $day, $starting_hour + ($t - $slice_start)/$slice, $wday + 1, $t];
     }
   }
   return $it;
@@ -982,7 +983,7 @@ sub determine_hebrew_date () {
 # cf. https://www.hebcal.com/converter/
 sub format_hebrew_date ($) {
   my($data) = @_;
-  my($year, $month, $day, $hour) = @$data;
+  my($year, $month, $day, $hour, $wday) = @$data;
   my $it;
   my $tooltip;
   print STDERR "DEBUG: year=$year, month=$month, day=$day, hour=$hour\n" if $debug;
@@ -1012,7 +1013,8 @@ sub format_hebrew_date ($) {
     }
   }
   if ($genmon_mode) {
-    $tooltip = sprintf('%s of %s (month %s), AM %d, %stime %s hour*', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $year, ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
+    my $epoch_prefix = ''; # was 'AM '
+    $tooltip = sprintf('%s day, %s of %s (month %s), %s%d, %stime %s hour*', ordinal($wday + 1), ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $epoch_prefix, $year, ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
   }
   return wantarray? ($it, $tooltip): $it;
 }
