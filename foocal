@@ -786,7 +786,7 @@ sub format_chinese_date ($) {
     } else {
       $it .= sprintf '%s/%s/%s', $year, $month, $day;
       $tooltip .= sprintf('%s, ', ($wday? sprintf('%d-past-the-week', $wday): 'Day of the week'));
-      $tooltip .= sprintf('%s of month %s, year %d (%s) in the current sexagenary cycle)',
+      $tooltip .= sprintf('%s of month %s, year %d (%s) in the current sexagenary cycle',
 	  ordinal($day), $month, $year, stem_branch_name($year)) if $genmon_mode;
 
       my($prime, $dprime) = $genmon_mode? ('′', '″'): ("'", '"');
