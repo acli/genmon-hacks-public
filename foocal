@@ -915,7 +915,7 @@ sub format_planetary_hour ($) {
     $fmt = $sysline_mode? ' %s': ' (%s)';
     $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
     $tooltip = sprintf 'day of %s, %s hour* (hour* of %s)',
-	get_representation($planets[($wday + 5*(int($wday) - 1))%7], 'name', 1),
+	get_representation($planets[$wday%7], 'name', 1), # same as formula below with hour = 1 (so entire term reduces to 0)
 	ordinal($planetary_hour),
 	get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7], 'name', 1);
   }
