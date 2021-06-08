@@ -272,84 +272,81 @@ use vars qw( @stems @branches );
   },
 );
 
-# We use the weird "meaningful" names found in https://zh.wikipedia.org/wiki/希伯來曆
-# because they are short
+# We don't use the weird "meaningful" names found in https://zh.wikipedia.org/wiki/希伯來曆
+# even though they are short, because first, they're weird and unrecognizable, and also because
+# according to the next link the meanings are also wrong.
+#
+# Note that it's easier to run months starting from Nisan because then Adar II would be just 13
+# (cf. http://www.yashanet.com/library/hebrew-days-and-months.html ) but that gets weird if
+# the year number increments at Tishrei
+#
+# Or we could in theory do what some programmers do and make Adar II 8 so in a non-leap year
+# after 7 we'd get 9 (cf. https://www.qppstudio.net/webhelp_xv4/jewish-month-numbers.htm )
+#
+# But in theory Adar I is the leap month, not Adar II, so actually no matter what we do it gets weird
 use vars qw( %hebrew_months );
 %hebrew_months = (
   'Nisan' => {
-    'zh' => '樂',
     'zh' => '七',
     'en' => 'Nisan',
     'xx' => '7',
   },
   'Iyyar' => {
-    'zh' => '愛',
     'zh' => '八',
     'en' => 'Iyyar',
     'xx' => '8',
   },
   'Sivan' => {
-    'zh' => '築',
     'zh' => '九',
     'en' => 'Sivan',
     'xx' => '9',
   },
   'Tamuz' => {
-    'zh' => '穫',
     'zh' => '十',
     'en' => 'Tammuz',
     'xx' => '10',
   },
   'Av' => {
-    'zh' => '熟',
     'zh' => '11',
     'en' => 'Av',
     'xx' => '11',
   },
   'Elul' => {
-    'zh' => '酹',
     'zh' => '12',
     'en' => 'Elul',
     'xx' => '12',
   },
   'Tishrei' => {
-    'zh' => '施',
     'zh' => '正',
     'en' => 'Tishrei',
     'xx' => '1',
   },
   'Cheshvan' => {
-    'zh' => '甦',
     'zh' => '二',
     'en' => 'Cheshvan',
     'xx' => '2',
   },
   'Kislev' => {
-    'zh' => '孕',
     'zh' => '三',
     'en' => 'Kislev',
     'xx' => '3',
   },
   'Tevet' => {
-    'zh' => '息',
     'zh' => '四',
     'en' => 'Tevet',
     'xx' => '4',
   },
   "Sh'vat" => {
-    'zh' => '洪',
     'zh' => '五',
     'en' => 'Shevat',
     'xx' => '5',
   },
   'Adar I' => {
-    'zh' => '閏魔',
     'zh' => '閏六',
     'en' => 'Adar I',
     'xx' => '6a',
   },
   'Adar' => {
-    'zh' => '魔',
     'zh' => '六',
     'en' => 'Adar II',
     'xx' => '6b',
