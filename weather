@@ -157,7 +157,7 @@ sub display_weather_data ($) {
       my $warning = $data->{'data'}->[$i]->{'title'};
       my $details = $data->{'data'}->[$i]->{'summary'};
       $warning =~ s/\s*,\s*$city_name\s*$//s;
-      push @warnings, [$warning, $details];
+      push @warnings, [$warning, $details] unless $warning =~ /^No watches or warnings in effect/;
     }
   }
   my($condition, $observed_at, $humidity, $temperature, $wind_direction, $wind_speed, $wind_gust, $wind, $aq);
@@ -211,7 +211,7 @@ sub display_weather_data ($) {
   # see also https://developer.gnome.org/pygtk/stable/pango-markup-language.html
   print '<txt>' if $genmon_mode;
   print $city_name;
-  print sprintf(' (%s)', join(', ', map { $_->[0] } @warnings));
+  print sprintf(' (%s)', join(', ', map { $_->[0] } @warnings)) if @warnings;
   print ': ';
   print "\n" unless $sysline_mode;
   print join(' ', @stuff);
@@ -226,8 +226,8 @@ sub display_weather_data ($) {
     print "$condition, $humidity\% humidity, ";
     print "$wind_direction ";
     print "$wind_descriptor " if $wind_descriptor !~ /moderate/;
-    print 'wind';
-    print " of $wind_speed km/h";
+    print 'wind' unless $wind_descriptor =~ /\b(?:air|calm)$/;
+    print " of $wind_speed km/h" unless $wind_descriptor eq 'calm';
     print " gusting to $wind_gust km/h" if defined $wind_gust;
     print ", visibility $visibility km" if defined $visibility;
 
