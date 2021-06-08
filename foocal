@@ -647,7 +647,7 @@ sub determine_chinese_date () {
     my $tomorrow = tomorrow $t;
     my($daybreak, $slice_start, $slice_end, $starting_hour);
     # Proportional hour is used in a very early system (Spring and Autumn Period / Warring States),
-    # but I don't even have an idea when the day starts (probably day before night) so we'll just use an arbitary cutoff
+    # but I don't even have an idea when the day starts (probably day before night) so we'll arbitrarily use sunrise as cutoff
     if ($t < estimate_sunrise($today)) {
       $daybreak = estimate_sunrise($yesterday);
       $slice_start = estimate_sunset($yesterday);
@@ -735,9 +735,18 @@ sub determine_chinese_date () {
       }
       undef $solar_term unless $solar_term;
       my $chinese_hour = (($hour + 1)%24)/2 + 1;
-      my $quarter = $min/15 + 1;
+      my $quarter;
       my $centiday = eval { no integer; ($t - $midnight)/864 };
-      $quarter += 4 if $hour%2 == 0;
+      if ($enable_qing_quarters) {
+	$quarter = $min/15 + 1;
+	$quarter += 4 if $hour%2 == 0;
+      } else {
+	# NOTE: traditionally these aren't quarters, but number of centiday marks past the beginning of the hour
+	no integer;
+	my $reporting_origin = (($chinese_hour - 1.5) * 7200)/864;
+	$reporting_origin -= 100 if $reporting_origin > $centiday;
+	$quarter = $centiday - int($reporting_origin);
+      }
       $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday, $wday];
       ((3+1)%24)/2+1
     }
