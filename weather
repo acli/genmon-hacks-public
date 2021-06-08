@@ -223,7 +223,7 @@ sub display_weather_data ($) {
     # The tooltip can't be too long, otherwise we just get a blank half-line at the top of the screen. Bummers.
     print '<tool>' if $genmon_mode;
     print "Observed at $observed_at:\n";
-    print "$condition, $humidity\% humidity, ";
+    print "$condition, $temperature, $humidity\% humidity, ";
     print $wind_direction;
     print " $wind_descriptor" if $wind_descriptor !~ /moderate/;
     print ' wind' unless $wind_descriptor =~ /\b(?:air|calm)$/;
