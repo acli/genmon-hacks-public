@@ -31,10 +31,12 @@ and “always” use icons (`--iconic`)
 Example: `tzdate Europe/Berlin` displays the current Central European time
 
 ## weather
-The *weather* script connect to an RSS feed offered by Environment Canada.
+The *weather* script connect to an RSS feed offered by Environment Canada to display current weather conditions.
+It will cache the data to avoid overloading Environment Canada’s servers.
 
 To make the output compatible with *genmon*, the `-g` or `--genmon` argument must be given.
-In *genmon* mode, you can hover your mouse over the date and time to read a longer description.
+In *genmon* mode, you can hover your mouse over the date and time to read a longer description
+plus two forecasts.
 
 The script is currently hard-coded for Toronto (which means Pearson, not the city centre, so it’s really Mississauga);
 if you aren’t anywhere near Toronto or Mississauga you must change the `$city` variable in the script
