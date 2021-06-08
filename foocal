@@ -788,14 +788,14 @@ sub format_chinese_date ($) {
 
       my($prime, $dprime) = $genmon_mode? ('′', '″'): ("'", '"');
       if ($enable_decaminutes) {
-	$it .= sprintf '+%d°', $centiday;
+	$it .= sprintf '+%d:', $centiday;
 	$it .= sprintf "%d%s", $decaminute, $prime;
 	$it .= sprintf '%d%s', $minute, $dprime if $enable_minutes;
       } elsif ($enable_minutes) {
-	$it .= sprintf '+%d°', $centiday;
+	$it .= sprintf '+%d:', $centiday;
 	$it .= sprintf "%d%s", $minute, $prime;
       } else {
-	$it .= sprintf '+%.*f°', $decimals, $centiday;
+	$it .= sprintf '+%.*f', $decimals, $centiday;
       }
       if ($genmon_mode) {
 	$tooltip .= sprintf ' (%s)', $solar_term if defined $solar_term;
