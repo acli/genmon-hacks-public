@@ -920,7 +920,7 @@ sub format_planetary_hour ($) {
     local $representation = $style;
     $fmt = $sysline_mode? ' %s': ' (%s)';
     $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
-    $tooltip = sprintf 'day of %s, %s hour* (hour* of %s)',
+    $tooltip = sprintf 'day of %s, %s hour* (of %s)',
 	get_representation($planets[$wday%7], 'name', 1), # same as formula below with hour = 1 (so entire term reduces to 0)
 	ordinal($planetary_hour),
 	get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7], 'name', 1);
@@ -1029,7 +1029,7 @@ sub format_hebrew_date ($) {
     push @stuff, sprintf('%s of %s (month %s), %s%d', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $epoch_prefix, $year);
     # front the more useful version. See https://www.chabad.org/library/article_cdo/aid/134527/jewish/Zmanim-Briefly-Defined-and-Explained.htm
     my $display_hour = eval { no integer; POSIX::fmod($hour - 1, 12) + 1 };
-    push @stuff, sprintf('%.*f hour%s* into the %s', $decimals, $display_hour, ($display_hour == 1? '': 's'), ($hour < 13? 'night': 'day'));
+    push @stuff, sprintf('%.*f hour%s* into the %s', $decimals, eval { no integer; $display_hour - 1 }, ($display_hour == 1? '': 's'), ($hour < 13? 'night': 'day'));
     # then include the less useful version as a parenthetical comment. This order is also consistent with the Chinese tooltip
     $stuff[$#stuff] .= sprintf(' (%stime %s hour*)', ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
     $tooltip = join(', ', @stuff);
