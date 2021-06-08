@@ -1021,10 +1021,11 @@ sub format_hebrew_date ($) {
     my @stuff;
     push @stuff, $wday == 7? 'Shabbat': sprintf('%s day', ordinal($wday + 1));
     push @stuff, sprintf('%s of %s (month %s), %s%d', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $epoch_prefix, $year);
-    push @stuff, sprintf('%stime %s hour*', ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
-    # more useful version of the above. See https://www.chabad.org/library/article_cdo/aid/134527/jewish/Zmanim-Briefly-Defined-and-Explained.htm
+    # front the more useful version. See https://www.chabad.org/library/article_cdo/aid/134527/jewish/Zmanim-Briefly-Defined-and-Explained.htm
     my $display_hour = eval { no integer; POSIX::fmod($hour - 1, 12) + 1 };
-    $stuff[$#stuff] .= sprintf(' (%.*f hour%s* into the %s)', $decimals, $display_hour, ($display_hour == 1? '': 's'), ($hour < 13? 'night': 'day'));
+    push @stuff, sprintf('%.*f hour%s* into the %s', $decimals, $display_hour, ($display_hour == 1? '': 's'), ($hour < 13? 'night': 'day'));
+    # then include the less useful version as a parenthetical comment. This order is also consistent with the Chinese tooltip
+    $stuff[$#stuff] .= sprintf(' (%stime %s hour*)', ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
     $tooltip = join(', ', @stuff);
   }
   return wantarray? ($it, $tooltip): $it;
