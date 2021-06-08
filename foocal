@@ -71,6 +71,9 @@ use vars qw( $genmon_mode );
 $enable_hebcal = 1;
 $decimals = 2;
 
+use vars qw( $now );
+$now = time; # so that everything can be synchronized
+
 use vars qw( $coords );
 
 use vars qw( $representation );
@@ -413,7 +416,7 @@ sub estimate_sunrise ($) {
     $tmp = ($sunrise->sunrise($dt))[0];
   } else {
     no integer;
-    my $tz = ($2 + $3/60) * ($1 eq '-'? -1: 1) if POSIX::strftime('%z', localtime time) =~ /^([-\+])(\d\d)(\d\d)$/;
+    my $tz = ($2 + $3/60) * ($1 eq '-'? -1: 1) if POSIX::strftime('%z', localtime $t) =~ /^([-\+])(\d\d)(\d\d)$/;
     my($sunrise, $sunset) = Astro::Sunrise::sunrise(year => $year + 1900, month => $mon + 1, day => $mday,
 	lon => $lon, lat => $lat, $tz, $isdst);
 
@@ -433,6 +436,14 @@ sub estimate_sunset ($) {
   } elsif ($use_datetime_astro_sunrise) {
     my $sunrise = DateTime::Astro::Sunrise->new($lat, $lon, undef, 1);
     $tmp = ($sunrise->sunrise($dt))[1];
+  } else {
+    # this should be the same as the else case in estimate_sunrise except the last line
+    no integer;
+    my $tz = ($2 + $3/60) * ($1 eq '-'? -1: 1) if POSIX::strftime('%z', localtime $t) =~ /^([-\+])(\d\d)(\d\d)$/;
+    my($sunrise, $sunset) = Astro::Sunrise::sunrise(year => $year + 1900, month => $mon + 1, day => $mday,
+	lon => $lon, lat => $lat, $tz, $isdst);
+
+    $tmp = $sunset;
   }
   return $tmp->strftime('%s');
 }
@@ -542,7 +553,6 @@ sub read_xfce_cache () {
   my $input = "$ENV{HOME}/.config/xfce4/panel/weather-17.rc";
   my $dir = "$ENV{HOME}/.cache/xfce4/weather";
   my $it;
-  local(*DIR);
   my $rc = read_ini $input;
   if (defined $rc) {
     ($lat, $lon) = ($rc->{'lat'}, $rc->{'lon'});
@@ -561,7 +571,7 @@ sub read_xfce_cache () {
 	    if ($val =~ /^(\d\d\d\d)-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)Z$/) {
 	      $val = mktime($6, $5, $4, $3, $2 - 1, $1 - 1900);	# mktime assumes local time so the result is wrong
 	      die "Internal error: mktime failed for \"$val\"\n" unless defined $val;
-	      my $z = POSIX::strftime('%z', localtime time);	# try to figure out timezone offset
+	      my $z = POSIX::strftime('%z', localtime $now);	# try to figure out timezone offset
 	      if ($z =~ /^-(\d\d)(\d\d)$/) {
 		$val -= $1 * 3600 + $2 * 60;
 	      } elsif ($z =~ /^\+(\d\d)(\d\d)$/) {
@@ -614,7 +624,7 @@ sub read_cached_page ($;$) {
 }
 
 sub read_hko_conversion_table () {
-  my $t = time;
+  my $t = $now;
   my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $t;
   my $dir = "$ENV{HOME}/Documents/calendar";
   my $basename = sprintf('T%04d%s.txt', $year + 1900, ($enable_chinese? 'c': 'e'));
@@ -638,7 +648,7 @@ sub determine_chinese_date () {
   # NOTE: according to one source (forgot which), although Zi spans [2300, 0100), the new day stil starts at 0000. Very odd :-/
   # therefore the old adjustment for [2300, 0000) has been deleted
   if (defined $coords) {
-    my $t = time;
+    my $t = $now;
     my $today = start_of_day $t;
     my $yesterday = yesterday $t;
     my $tomorrow = tomorrow $t;
@@ -745,7 +755,6 @@ sub determine_chinese_date () {
 	$quarter = $centiday - int($reporting_origin);
       }
       $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday, $wday];
-      ((3+1)%24)/2+1
     }
   }
   return $it;
@@ -874,7 +883,7 @@ sub format_chinese_date ($) {
 sub determine_planetary_hour () {
   my $it;
   if (defined $coords) {
-    my $t = time;
+    my $t = $now;
     my $today = start_of_day $t;
     my $yesterday = yesterday $t;
     my $tomorrow = tomorrow $t;
@@ -941,7 +950,7 @@ sub format_planetary_hour ($) {
 sub determine_hebrew_date () {
   my $it;
   if (defined $coords) {
-    my $t = time;
+    my $t = $now;
     my $today = start_of_day $t;
     my $yesterday = yesterday $t;
     my $tomorrow = tomorrow $t;
@@ -969,11 +978,11 @@ sub determine_hebrew_date () {
       # hebcal expects secular-style midnight cutoffs, but traditional reckoning cuts off at sundown
       # so we need to calculate wday using $daybreak, but hand hebcal a secular date ($daybreak + 43200, say)
       my $wday = (localtime($daybreak))[6]; # correct in traditional reckoning
-      my($sec, $min, $hour, $mday, $mon, $year, $wday_secular) = localtime($daybreak + 43200); # correct in secular reckoning
+      my($sec, $min, $hour, $mday, $mon, $unix_year, $unix_wday) = localtime($daybreak + 43200); # correct in secular reckoning
       my $hebcal = -f '/usr/bin/hebcal'? '/usr/bin/hebcal': '/usr/local/bin/hebcal';
       my @cmd = ($hebcal, '-T',
 	  '-l', eval { no integer; sprintf('%d,%d', $lat, int(60*$lat)%60) },
-	  '-L', eval { no integer; sprintf('%d,%d', $lon, int(60*$lon)%60) }, $mon + 1, $mday, $year + 1900);
+	  '-L', eval { no integer; sprintf('%d,%d', $lon, int(60*$lon)%60) }, $mon + 1, $mday, $unix_year + 1900);
 
       print STDERR 'DEBUG: running: ', join(' ', @cmd), "\n" if $debug;
       my $pid = open(INPUT, '-|');
