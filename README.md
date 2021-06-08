@@ -24,6 +24,7 @@ Example: I use `foocal -m -p all -g --iconic` which means
 divide centidays into Sui/Tang 60-part minutes (`-m`),
 display Western astrological date and time (`-p all`),
 and “always” use icons (`--iconic`)
+The script provides a `--help` option that explains all available options.
 
 ## tzdate
 *tzdate* is a very simple script that takes the name of a timezone code and displays the current date and time in that timezone.
@@ -45,5 +46,6 @@ after consulting the Environment Canada site to figure out the correct code to u
 You can also run this script in *sysline* mode (`-w` or `--sysline`);
 this will cause the script to reduce its output to a single line,
 suitable for use in a .who file.
+The script provides a `--help` option that explains all available options.
 
 Example: `weather -g --iconic` makes sure icons are used (`--iconic`)
