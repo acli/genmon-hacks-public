@@ -818,9 +818,9 @@ sub format_chinese_date ($) {
       }
     }
     if (defined $deciday) {
-      my $div = ($deciday - 1)%5 + 1;
+      my $div = eval { no integer; fmod($deciday - 1, 5) + 1 };
       if ($genmon_mode) {
-	$it .= sprintf(' %s%d', ($deciday < 6? '☼': '☽'), $div);
+	$it .= sprintf(' %s%.*f', ($deciday < 6? '☼': '☽'), $decimals, $div);
 	$tooltip .= ', ';
 	$tooltip .= sprintf(($deciday < 6? 'daytime %s deciday*': 'nighttime'), ordinal(($deciday - 1)%5 + 1));
       } elsif ($sysline_mode) {
@@ -1011,7 +1011,7 @@ sub format_hebrew_date ($) {
     my $sep = $genmon_mode? ' ': '/';
     $it = sprintf('%d%s%s%s%d ', $day, $sep, $hebrew_months{$month}->{$lang}, $sep, $year);
     $it .= ($hour < 13? '☽': '☼') if $genmon_mode;
-    $it .= sprintf('%d', ($hour - 1)%12 + 1);
+    $it .= sprintf('%.*f', $decimals, eval { no integer; fmod($hour - 1, 12) + 1 });
     $it .= sprintf('h (%s)', ($hour < 13? 'night': 'day')) unless $genmon_mode;
     if ($hour <= 12) {
       my $watch = ($hour - 1)/3 + 1;
