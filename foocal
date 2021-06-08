@@ -777,8 +777,8 @@ sub format_chinese_date ($) {
     } else {
       $it .= sprintf '%s/%s/%s', $year, $month, $day;
       $tooltip .= sprintf('%s, ', ($wday? sprintf('%d-past-the-week', $wday): 'Day of the week'));
-      $tooltip .= sprintf('%s of month %s, %s (year %d in the current sexagenary cycle)',
-	  ordinal($day), $month, stem_branch_name($year), $year) if $genmon_mode;
+      $tooltip .= sprintf('%s of month %s, year %d (%s) in the current sexagenary cycle)',
+	  ordinal($day), $month, $year, stem_branch_name($year)) if $genmon_mode;
 
       my($prime, $dprime) = $genmon_mode? ('′', '″'): ("'", '"');
       if ($enable_decaminutes) {
@@ -808,7 +808,7 @@ sub format_chinese_date ($) {
 	$it .= sprintf '+%d', $quarter if $quarter;
 	$it .= ')';
 	$tooltip .= sprintf '%d centiday mark%s past ', $quarter, ($quarter == 1? '': 's') if $quarter;
-	$tooltip .= sprintf '%s (%s hour)', branch_name($chinese_hour), ordinal($chinese_hour);
+	$tooltip .= sprintf '%s hour (%s)', ordinal($chinese_hour), branch_name($chinese_hour);
       }
     }
     if (defined $deciday) {
@@ -926,7 +926,7 @@ sub format_planetary_hour ($) {
 # Cf https://www.britannica.com/science/calendar/Ancient-and-religious-calendar-systems
 #    https://zh.wikipedia.org/wiki/希伯來曆
 # but apparently it's supposed to use the weird hour divisions too
-# Cf http://kehillatisrael.net/hcal/zmanim.html
+# Cf http://kehillatisrael.net/hcal/zmanim.html [dead link as of 20210608]
 # Although the day number is supposed to change at 6pm (?!)
 # Cf http://www.jewfaq.org/calendr2.htm
 sub determine_hebrew_date () {
@@ -957,7 +957,10 @@ sub determine_hebrew_date () {
       no integer;
       my $slice = ($slice_end - $slice_start)/12;
       print STDERR "DEBUG: daybreak=$daybreak, slice_start=$slice_start, slice_end=$slice_end\n" if $debug;
-      my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime($daybreak); # pick something unambiguous
+      # hebcal expects secular-style midnight cutoffs, but traditional reckoning cuts off at sundown
+      # so we need to calculate wday using $daybreak, but hand hebcal a secular date ($daybreak + 43200, say)
+      my $wday = (localtime($daybreak))[6]; # correct in traditional reckoning
+      my($sec, $min, $hour, $mday, $mon, $year, $wday_secular) = localtime($daybreak + 43200); # correct in secular reckoning
       my $hebcal = -f '/usr/bin/hebcal'? '/usr/bin/hebcal': '/usr/local/bin/hebcal';
       my @cmd = ($hebcal, '-T',
 	  '-l', eval { no integer; sprintf('%d,%d', $lat, int(60*$lat)%60) },
@@ -1016,7 +1019,7 @@ sub format_hebrew_date ($) {
   if ($genmon_mode) {
     my $epoch_prefix = ''; # was 'AM '
     my @stuff;
-    push @stuff, $wday == 7? 'Shabbat': sprintf('%s day', ordinal($wday));
+    push @stuff, $wday == 7? 'Shabbat': sprintf('%s day', ordinal($wday + 1));
     push @stuff, sprintf('%s of %s (month %s), %s%d', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $epoch_prefix, $year);
     push @stuff, sprintf('%stime %s hour*', ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
     # more useful version of the above. See https://www.chabad.org/library/article_cdo/aid/134527/jewish/Zmanim-Briefly-Defined-and-Explained.htm
