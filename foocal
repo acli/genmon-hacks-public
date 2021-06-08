@@ -788,11 +788,11 @@ sub format_chinese_date ($) {
 
       my($prime, $dprime) = $genmon_mode? ('′', '″'): ("'", '"');
       if ($enable_decaminutes) {
-	$it .= sprintf '+%d:', $centiday;
+	$it .= sprintf '+%d˙', $centiday; # U+02d9
 	$it .= sprintf "%d%s", $decaminute, $prime;
 	$it .= sprintf '%d%s', $minute, $dprime if $enable_minutes;
       } elsif ($enable_minutes) {
-	$it .= sprintf '+%d:', $centiday;
+	$it .= sprintf '+%d˙', $centiday; # U+02d9
 	$it .= sprintf "%d%s", $minute, $prime;
       } else {
 	$it .= sprintf '+%.*f', $decimals, $centiday;
