@@ -161,6 +161,7 @@ sub display_weather_data ($) {
     }
   }
   my($condition, $observed_at, $humidity, $temperature, $wind_direction, $wind_speed, $wind_gust, $wind, $aq);
+  my($humidex, $visibility, $dewpoint, $pressure, $tendency);
   if ($current->{'summary'} =~ /<b>Condition:<\/b>\s+(.*?)\s*<br\/>/s) {
     $condition = $1;
   }
@@ -170,8 +171,17 @@ sub display_weather_data ($) {
   if ($current->{'summary'} =~ /<b>Humidity:<\/b>\s+(\d+)\s*\%\s*<br\/>/s) {
     $humidity = $1;
   }
+  if ($current->{'summary'} =~ /<b>Visibility:<\/b>\s+(.*?)\s+km\s*<br\/>/s) {
+    $visibility = $1;
+  }
   if ($current->{'summary'} =~ /<b>Temperature:<\/b>\s+(.*?)\s*<br\/>/s) {
     $temperature = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Dewpoint:<\/b>\s+(.*?)\s*<br\/>/s) {
+    $dewpoint = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Pressure \/ Tendency:<\/b>\s+(.*?)\s+kPa(?:\s+(\S.*?))?\s*<br\/>/s) {
+    ($pressure, $tendency) = ($1, $2);
   }
   if ($current->{'summary'} =~ /<b>Wind:<\/b>\s+(.*?)\s*<br\/>/s) {
     $wind = $1;
@@ -179,6 +189,9 @@ sub display_weather_data ($) {
   }
   if ($current->{'summary'} =~ /<b>Air Quality Health Index:<\/b>\s+(\d+)\s*<br\/>/s) {
     $aq = $1;
+  }
+  if ($current->{'summary'} =~ /<b>Humidex:<\/b>\s+(\d+)\s*<br\/>/s) {
+    $humidex = $1;
   }
   my $use_icons = ($genmon_mode || $representation eq 'icon');
   my @stuff;
@@ -191,6 +204,9 @@ sub display_weather_data ($) {
   } else {
     push @stuff, "AQ$aq";
   }
+  if (defined $humidex && $humidex >= 30) {
+    push @warnings, ["humidex $humidex"];
+  }
   # see https://gitlab.xfce.org/panel-plugins/xfce4-genmon-plugin
   # see also https://developer.gnome.org/pygtk/stable/pango-markup-language.html
   print '<txt>' if $genmon_mode;
@@ -201,19 +217,51 @@ sub display_weather_data ($) {
   print join(' ', @stuff);
   print "</txt>\n" if $genmon_mode;
   if (!$sysline_mode) {
+    # See https://blog.metservice.com/BeaufortWindScale
+    my $wind_descriptor = $wind_speed < 1? 'calm': $wind_speed < 6? 'light air': $wind_speed < 12? 'light': $wind_speed < 20? 'gentle': $wind_speed < 29? 'moderate': $wind_speed < 38? 'fresh': $wind_speed < 50? 'strong': $wind_speed < 62? 'near gale': $wind_speed < 75? 'gale': $wind_speed < 89? 'strong gale': $wind_speed < 103? 'storm': $wind_speed < 118? 'violent storm': 'hurricane force';
     print "\n";
     # The tooltip can't be too long, otherwise we just get a blank half-line at the top of the screen. Bummers.
     print '<tool>' if $genmon_mode;
-    print "Observed at $observed_at";
+    print "Observed at $observed_at:\n";
+    print "$condition, $humidity\% humidity, ";
+    print "$wind_direction ";
+    print "$wind_descriptor " if $wind_descriptor !~ /moderate/;
+    print 'wind';
+    print " of $wind_speed km/h";
+    print " gusting to $wind_gust km/h" if defined $wind_gust;
+    print ", visibility $visibility km" if defined $visibility;
+
+    print "; dewpoint $dewpoint";
+    print ", pressure $pressure";
+    print " $tendency" if defined $tendency;
+
+    # see https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/about.html
+    printf '; air quality %s (%s health risk)', $aq, ($aq < 4? 'low': $aq < 7? 'moderate': $aq < 10? 'high': 'very high');
+
+    # see https://www.ccohs.ca/oshanswers/phys_agents/humidex.html
+    printf ', humidex %s (%s)', $humidex, ($humidex < 30? 'comfortable': $humidex < 40? 'some discomfort': $humidex > 45? 'dangerous': 'great discomfort, avoid exertion') if defined $humidex;
+
     print "\n";
+    for my $node (@warnings) {
+      my($warning, $details) = @$node;
+      if (defined $details) {
+	$details =~ s/\s+Issued: .*$//s;
+	print "\n$warning:\n$details\n";
+      }
+    }
+
+    my $countdown = 2 if $genmon_mode;
     for my $i (@{$data->{'forecasts'}}) {
       my $forecast = $data->{'data'}->[$i]->{'title'};
       my $details = $data->{'data'}->[$i]->{'summary'};
+      $details =~ s/\s*Forecast issued .*$// if $genmon_mode;
       print "\n";
-      printf "Forecast: $forecast", $forecast;
-    last if $genmon_mode;
+      my $title = "Forecast: $forecast";
+      $title =~ s/^Forecast: ([^:]+): .*/Forecast for \1:/s if $genmon_mode;
+      print "$title\n";
+      printf "%s", $details;
+    last if defined $countdown && --$countdown == 0;
       print "\n";
-      printf "%s\n", $details;
     }
     print "</tool>\n" if $genmon_mode;
   }
