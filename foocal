@@ -776,7 +776,7 @@ sub format_chinese_date ($) {
       $it .= ')';
     } else {
       $it .= sprintf '%s/%s/%s', $year, $month, $day;
-      $tooltip .= sprintf('%s, ', ($wday? sprintf('%s-past-the-week', ordinal($wday)): 'Day of the week'));
+      $tooltip .= sprintf('%s, ', ($wday? sprintf('%d-past-the-week', $wday): 'Day of the week'));
       $tooltip .= sprintf('%s of month %s, %s (year %d in the current sexagenary cycle)',
 	  ordinal($day), $month, stem_branch_name($year), $year) if $genmon_mode;
 
@@ -815,7 +815,8 @@ sub format_chinese_date ($) {
       my $div = ($deciday - 1)%5 + 1;
       if ($genmon_mode) {
 	$it .= sprintf(' %s%d', ($deciday < 6? '☼': '☽'), $div);
-	$tooltip .= sprintf ', %s %s deciday*', ($deciday < 6? 'daytime': 'nighttime'), ordinal($deciday);
+	$tooltip .= ', ';
+	$tooltip .= sprintf(($deciday < 6? 'daytime %s deciday*': 'nighttime'), ordinal(($deciday - 1)%5 + 1));
       } elsif ($sysline_mode) {
 	$it .= sprintf(' %s+%d', ($deciday < 6? 'd': 'e'), $div);
       } elsif ($enable_chinese) {
@@ -843,7 +844,7 @@ sub format_chinese_date ($) {
 	$it .= $watch if $sysline_mode;
 	$it .= 'w' if $sysline_mode || $subwatch;
 	$it .= $subwatch if $subwatch;
-	$tooltip .= sprintf '%s fifth of %s watch', ordinal($subwatch), ordinal($watch) if $genmon_mode;
+	$tooltip .= sprintf ', %s fifth of %s watch', ordinal($subwatch), ordinal($watch) if $genmon_mode;
 	$tooltip .= '*' if $genmon_mode && !$enable_nonproportional_watches;
       } else {
 	$it .= sprintf('%d past ', $subwatch) if $subwatch;
