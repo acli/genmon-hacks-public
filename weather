@@ -167,6 +167,12 @@ sub display_weather_data ($) {
   }
   if ($current->{'summary'} =~ /<b>Observed at:<\/b>\s+(.+?)\s*<br\/>/s) {
     $observed_at = $1;
+    # Nuke the date and/or timezone references if they're superfluous
+    my $now = time;
+    my $expected_tz = POSIX::strftime('%Z', localtime $now);
+    my $expected_date = POSIX::strftime('%A %d %B %Y', localtime $now);
+    $observed_at =~ s/ $expected_date$//;
+    $observed_at =~ s/ $expected_tz\b//;
   }
   if ($current->{'summary'} =~ /<b>Humidity:<\/b>\s+(\d+)\s*\%\s*<br\/>/s) {
     $humidity = $1;
