@@ -833,7 +833,7 @@ sub format_chinese_date ($) {
 	$tooltip .= ', ';
 	my $relative_deciday = eval { no integer; fmod($deciday - 1, 5) };
 	my $moitie = ($deciday < 6? 'day': 'night');
-	$tooltip .= sprintf('%.*f hour%s into the %s, ', $decimals, $relative_deciday, ($relative_deciday == 1? '': 's'), $moitie);
+	$tooltip .= sprintf('%.*f deciday%s* into the %s, ', $decimals, $relative_deciday, ($relative_deciday == 1? '': 's'), $moitie);
 	$tooltip .= sprintf(($deciday < 6? '%stime %s deciday*': '%stime'), $moitie, ordinal(($deciday - 1)%5 + 1));
       } elsif ($sysline_mode) {
 	$it .= sprintf(' %s+%d', ($deciday < 6? 'd': 'e'), $div);
