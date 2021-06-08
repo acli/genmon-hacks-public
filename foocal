@@ -1109,12 +1109,14 @@ my $sep;
 print '<txt>' if $genmon_mode;
 for my $s (($c1, $p1, $h1)) {
   $sep = ' | ' if $genmon_mode && defined $p1 && $s eq $h1;
-  print $sep if defined $sep;
-  print $s;
-  $sep = $sysline_mode? ' | ': "\n";
+  if (defined $s) {
+    print $sep if defined $sep;
+    print $s;
+    $sep = $sysline_mode? ' | ': "\n";
+  }
 }
 print "</txt>\n" if $genmon_mode;
-if (defined $c2 || defined $p2 || defined $h2) {
+if (!$sysline_mode && (defined $c2 || defined $p2 || defined $h2)) {
   my $note_needed = 0;
   $sep = undef;
   print '<tool>' if $genmon_mode;
