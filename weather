@@ -224,9 +224,9 @@ sub display_weather_data ($) {
     print '<tool>' if $genmon_mode;
     print "Observed at $observed_at:\n";
     print "$condition, $humidity\% humidity, ";
-    print "$wind_direction ";
-    print "$wind_descriptor " if $wind_descriptor !~ /moderate/;
-    print 'wind' unless $wind_descriptor =~ /\b(?:air|calm)$/;
+    print $wind_direction;
+    print " $wind_descriptor" if $wind_descriptor !~ /moderate/;
+    print ' wind' unless $wind_descriptor =~ /\b(?:air|calm)$/;
     print " of $wind_speed km/h" unless $wind_descriptor eq 'calm';
     print " gusting to $wind_gust km/h" if defined $wind_gust;
     print ", visibility $visibility km" if defined $visibility;
