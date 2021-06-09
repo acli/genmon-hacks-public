@@ -41,16 +41,16 @@ display Western astrological date and time (`-p all`),
 and “always” use icons (`--iconic`)
 The script provides a `--help` option that explains all available options.
 
-Note that *foocal* gives names the days of the week with a fairly literal translation of what they are actually called,
+Note that *foocal* names the days of the week with fairly literal translations of what they are called in the original languages,
 so these are the names you’ll see in the tooltip when you hover your mouse over the date and time:
 
 <figure>
 <table><thead>
-<tr><th rowspan=2> Day of the week <th rowspan=2> Hebrew system <th rowspan=2> Chinese system <th colspan=2> Alternative Chinese systems (not used)
-<tr><th>Protestant-flavoured¹<th>Catholic-flavoured²
+<tr><th rowspan=2> Day of the week¹ <th rowspan=2> Hebrew system <th rowspan=2> Chinese system <th colspan=2> Alternative Chinese systems (not used)
+<tr><th>Protestant-flavoured²<th>Catholic-flavoured³
   </thead><tbody>
 <tr><td>Sunday          <td>1st day       <td>Day of the week (星期日)  <td>Day of worship (禮拜日)      <td> Day of worship (瞻禮日)
-<tr><td>Monday          <td>2nd day       <td>1-past-the-week (星期一)³ <td>1-past-the-worship (禮拜一)³ <td> 2nd worship (瞻禮二)
+<tr><td>Monday          <td>2nd day       <td>1-past-the-week (星期一)⁴ <td>1-past-the-worship (禮拜一)⁴ <td> 2nd worship (瞻禮二)
 <tr><td>Tuesday         <td>3rd day       <td>2-past-the-week (星期二)  <td>2-past-the-worship (禮拜二)  <td> 3rd worship (瞻禮三)
 <tr><td>Wednesday       <td>4th day       <td>3-past-the-week (星期三)  <td>3-past-the-worship (禮拜三)  <td> 4th worship (瞻禮四)
 <tr><td>Thursday        <td>5th day       <td>4-past-the-week (星期四)  <td>4-past-the-worship (禮拜四)  <td> 5th worship (瞻禮五)
@@ -58,7 +58,9 @@ so these are the names you’ll see in the tooltip when you hover your mouse ove
 <tr><td>Saturday        <td>Shabbat       <td>6-past-the-week (星期六)  <td>6-past-the-worship (禮拜六)  <td> 7th worship (瞻禮七)
 </tbody></table>
 <figcaption>Notes:
-<ol><li>Used colloquially even in secular contexts</li>
+<ol>
+<li>Chinese used to use the same system; the same system (日曜日 = Sunday, 月曜日 = Monday, etc.) is still used in Japanese
+<li>Also commonly used colloquially even in secular contexts</li>
 <li>Only used in Catholic contexts and rarely</li>
 <li>Provisional translation based on how time used to be described under the hybrid duodecimal–centigrade system.
 These can alternatively be understood as 1-of-the-week, etc., which would sound more natural to the modern ear.
