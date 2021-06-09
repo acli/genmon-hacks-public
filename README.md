@@ -60,7 +60,8 @@ so these are the names you’ll see in the tooltip when you hover your mouse ove
 <figcaption>Notes:
 <ol><li>Used colloquially even in secular contexts</li>
 <li>Only used in Catholic contexts and rarely</li>
-<li>Or alternatively, 1-of-the-week, etc., which treats Sunday as the last day instead of first day of the week</li>
+<li>Provisional translation based on how time used to be described under the hybrid duodecimal–centigrade system.
+These can alternatively be understood as 1-of-the-week, etc., which would sound more natural to the modern ear.
 </ol></figcaption>
 </figure>
   
