@@ -15,7 +15,7 @@ hybrid duodecimal–centigrade time systems,
 plus a very old (Shang-era) proportional decimal time system.
 Centigrade time is assumed to reset at midnight, local time
 (instead of, say, as some sources claim, based on sunrise or the high noon);
-night watches in the proportional deciday system is assumed to start at sundown and end at sunrise
+night watches in the proportional decimal system is assumed to start at sundown and end at sunrise
 (instead of, say, as one source claims, 3 centidays after sundown and 3 centidays before sunrise).
 
 The Hebrew system is the Hebrew calendar and proportional time,
