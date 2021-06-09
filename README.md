@@ -12,7 +12,7 @@ and optionally a Western astrological proportional hour system.
 The Chinese system for dates is the lunar calendar still in use today;
 and for time, pre-1645 centigrade and
 hybrid duodecimal–centigrade time systems,
-plus a very old proportional decimal time system.
+plus a very old (Shang-era) proportional decimal time system.
 Centigrade time is assumed to reset at midnight, local time
 (instead of, say, as some sources claim, based on sunrise or the high noon);
 night watches in the proportional deciday system is assumed to start at sundown and end at sunrise
