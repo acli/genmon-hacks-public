@@ -4,7 +4,7 @@ All these scripts assume a font size small enough to display two lines of text.
 
 ## foocal
 *foocal*
-(so named because the Javascript clock I made that displays similar information was originally called *foo*)
+(so named because, I think, the Javascript clock I made that displays similar information was originally called *foo*)
 displays the current date and time according to several traditional Chinese systems,
 the Hebrew system,
 and optionally a Western astrological proportional hour system.
