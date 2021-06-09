@@ -809,7 +809,7 @@ sub format_chinese_date ($) {
       }
       if ($genmon_mode) {
 	$tooltip .= sprintf ' (%s)', $solar_term if defined $solar_term;
-	$tooltip .= sprintf ', %.*f centiday%s', $decimals, $centiday, ($centiday == 1? '': 's');
+	$tooltip .= sprintf ', %.*f centiday%s', $decimals, $centiday, (eval { no integer; $centiday == 1 }? '': 's');
 	$tooltip .= ' past midnight (';
       }
       if (!$sysline_mode && !$genmon_mode) {
@@ -834,7 +834,7 @@ sub format_chinese_date ($) {
 	$tooltip .= ', ';
 	my $relative_deciday = eval { no integer; fmod($deciday - 1, 5) };
 	my $moitie = ($deciday < 6? 'day': 'night');
-	$tooltip .= sprintf('%.*f deciday%s* into the %s, ', $decimals, $relative_deciday, ($relative_deciday == 1? '': 's'), $moitie);
+	$tooltip .= sprintf('%.*f deciday%s* into the %s, ', $decimals, $relative_deciday, (eval { no integer; $relative_deciday == 1}? '': 's'), $moitie);
 	$tooltip .= sprintf(($deciday < 6? '%stime %s deciday*': '%stime'), $moitie, ordinal(($deciday - 1)%5 + 1));
       } elsif ($sysline_mode) {
 	$it .= sprintf(' %s+%d', ($deciday < 6? 'd': 'e'), $div);
@@ -909,7 +909,7 @@ sub determine_planetary_hour () {
       no integer;
       my $slice = ($slice_end - $slice_start)/12;
       my($sec, $min, $hour, $mday, $mon, $year, $wday, $yday, $isdst) = localtime $daybreak;
-      $it = [$starting_hour + ($t - $slice_start)/$slice, $wday, $t];
+      $it = [$starting_hour + ($t - $slice_start)/$slice, $wday, ($daybreak < $today)];
     }
   }
   return $it;
@@ -922,7 +922,7 @@ sub format_planetary_hour ($) {
   my $it;
   my $tooltip;
   if (defined $data) {
-    my($planetary_hour, $wday, $t) = @$data;
+    my($planetary_hour, $wday, $note_needed) = @$data;
     no integer;
     my $m = int(60*($planetary_hour - 1))%60 + 1;
     my $s = int(3600*($planetary_hour - 1))%60 + 1;
@@ -933,10 +933,13 @@ sub format_planetary_hour ($) {
     local $representation = $style;
     $fmt = ($sysline_mode || $genmon_mode)? ' %s': ' (%s)';
     $it .= sprintf($fmt, get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7]));
-    $tooltip = sprintf 'day of %s, %s hour* (of %s)',
+    $tooltip .= sprintf 'day of %s%s, ',
 	get_representation($planets[$wday%7], 'name', 1), # same as formula below with hour = 1 (so entire term reduces to 0)
+	($note_needed? '‡': '');
+    $tooltip .= sprintf '%s hour* (of %s), %.*f hour%s* past sunrise',
 	ordinal($planetary_hour),
-	get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7], 'name', 1);
+	get_representation($planets[($wday + 5*(int($planetary_hour) - 1))%7], 'name', 1),
+	$decimals, eval { no integer; $planetary_hour - 1 }, (eval { no integer; $planetary_hour - 1 == 1 }? '': 's');
   }
   return wantarray? ($it, $tooltip): $it;
 }
@@ -996,7 +999,7 @@ sub determine_hebrew_date () {
 	exec {$cmd[0]} @cmd;
 	die "$0: determine_hebrew_date: exec: $!\n";
       }
-      $it = [$year, $month, $day, $starting_hour + ($t - $slice_start)/$slice, $wday + 1, $t];
+      $it = [$year, $month, $day, $starting_hour + ($t - $slice_start)/$slice, $wday + 1, ($daybreak > $today && $daybreak <= $t && $t < $tomorrow)];
     }
   }
   return $it;
@@ -1006,7 +1009,7 @@ sub determine_hebrew_date () {
 # cf. https://www.hebcal.com/converter/
 sub format_hebrew_date ($) {
   my($data) = @_;
-  my($year, $month, $day, $hour, $wday) = @$data;
+  my($year, $month, $day, $hour, $wday, $note_needed) = @$data;
   my $it;
   my $tooltip;
   print STDERR "DEBUG: year=$year, month=$month, day=$day, hour=$hour\n" if $debug;
@@ -1040,9 +1043,11 @@ sub format_hebrew_date ($) {
     my @stuff;
     push @stuff, $wday == 7? 'Shabbat': sprintf('%s day', ordinal($wday + 1));
     push @stuff, sprintf('%s of %s (month %s), %s%d', ordinal($day), $month, $hebrew_months{$month}->{'xx'}, $epoch_prefix, $year);
+    $stuff[$#stuff] .= '†' if $note_needed;
     # front the more useful version. See https://www.chabad.org/library/article_cdo/aid/134527/jewish/Zmanim-Briefly-Defined-and-Explained.htm
     my $display_hour = eval { no integer; POSIX::fmod($hour - 1, 12) + 1 };
-    push @stuff, sprintf('%.*f hour%s* into the %s', $decimals, eval { no integer; $display_hour - 1 }, ($display_hour == 1? '': 's'), ($hour < 13? 'night': 'day'));
+    push @stuff, sprintf('%.*f hour%s* into the %s', $decimals, $hour, ($hour == 1? '': 's'), ($hour < 13? 'night': 'day'));
+
     # then include the less useful version as a parenthetical comment. This order is also consistent with the Chinese tooltip
     $stuff[$#stuff] .= sprintf(' (%stime %s hour*)', ($hour < 13? 'night': 'day'), ordinal(($hour - 1)%12 + 1));
     $tooltip = join(', ', @stuff);
@@ -1140,7 +1145,7 @@ for my $s (($c1, $p1, $h1)) {
 }
 print "</txt>\n" if $genmon_mode;
 if (!$sysline_mode && (defined $c2 || defined $p2 || defined $h2)) {
-  my $note_needed = 0;
+  my $note_needed;
   $sep = undef;
   print '<tool>' if $genmon_mode;
   for my $spec ((['old Chinese systems', $c2], ['the Jewish system', $h2], ['Western astrology', $p2])) {
@@ -1149,11 +1154,13 @@ if (!$sysline_mode && (defined $c2 || defined $p2 || defined $h2)) {
       print $sep if defined $sep;
       print "In $label:\n" if defined $label;
       print $s;
-      $note_needed = 1 if $s =~ /\*/;
+      $note_needed->{$1} = 'proportional hours' if $s =~ /(\*)/;
+      $note_needed->{$1} = 'day has changed because it’s already past sundown' if $s =~ /(†)/;
+      $note_needed->{$1} = 'day has not yet changed because it’s not yet sunrise' if $s =~ /(‡)/;
     }
     $sep = "\n\n";
   }
-  print "\n_______\n* proportional hours" if $note_needed;
+  print "\n_______", join('', map { sprintf("\n%s %s", $_, $note_needed->{$_}) } sort keys %$note_needed) if defined $note_needed;
   print "</tool>\n" if $genmon_mode;
 }
 print STDERR "DEBUG: no Hebrew date data, hebcal(1) might not be present\n" if $debug && !defined $h1;
