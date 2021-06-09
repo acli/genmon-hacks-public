@@ -44,6 +44,11 @@ The script provides a `--help` option that explains all available options.
 Note that in the tooltip that you get when you hover your mouse over the date and time,
 names the days of the week are not the usual English names but literal translations of what they are called in the original languages.
 
+Note also that a Sui/Tang minute (1/60 of a centiday) is equal to exactly 14.4 seconds (the actual metric unit)
+while a centi-centiday is equal to exactly 8.64 seconds.
+Given that this script is quite slow,
+it’s probably very unwise to run it any more frequently than every 8 or 9 seconds.
+
 ## tzdate
 *tzdate* is a very simple script that takes the name of a timezone code and displays the current date and time in that timezone.
 
