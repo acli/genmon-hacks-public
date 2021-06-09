@@ -205,7 +205,9 @@ sub display_weather_data ($) {
   push @stuff, $temperature;
   push @stuff, "$humidity\%" if defined $humidity;
   push @stuff, (defined $wind_direction? ($wind_direction, $wind_speed): $wind);
-  if ($aq > 6) { # see https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/about.html
+  if (!defined $aq) {
+    ;
+  } elsif ($aq > 6) { # see https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/about.html
     push @warnings, ["AQ$aq"];
   } else {
     push @stuff, "AQ$aq";
@@ -242,7 +244,7 @@ sub display_weather_data ($) {
     print " $tendency" if defined $tendency;
 
     # see https://www.canada.ca/en/environment-climate-change/services/air-quality-health-index/about.html
-    printf '; air quality %s (%s health risk)', $aq, ($aq < 4? 'low': $aq < 7? 'moderate': $aq < 10? 'high': 'very high');
+    printf '; air quality %s (%s health risk)', $aq, ($aq < 4? 'low': $aq < 7? 'moderate': $aq < 10? 'high': 'very high') if defined $aq;
 
     # see https://www.ccohs.ca/oshanswers/phys_agents/humidex.html
     printf ', humidex %s (%s)', $humidex, ($humidex < 30? 'comfortable': $humidex < 40? 'some discomfort': $humidex > 45? 'dangerous': 'great discomfort, avoid exertion') if defined $humidex;
@@ -280,6 +282,7 @@ sub usage (;$) {
 Usage: $0 [OPTION]...
 Display official Environment Canada weather info for Toronto.
 
+      --city=CODE             Use the city identified by the specified CODE
   -I, --data-file=FILE        Use test feed data in specified FILE
   -g, --genmon                Terse format suitable as two-line genmon input
       --iconic                Use zodiac symbols (DO NOT USE)
@@ -287,8 +290,10 @@ Display official Environment Canada weather info for Toronto.
   -z, --chinese, --kanji      Use kanji instead of English (DO NOT USE)
       --debug                 Produce lots of debugging output
 
-Note that there is no way to pull weather data for any other city; the only
-supported city is Toronto.
+To find the correct code for your city, please visit Environment Canada's
+weather website at https://weather.gc.ca/mainmenu/weather_menu_e.html to
+choose a city, then examine the URL in your browser's address bar. The code
+should look something like bc-85 or on-143.
 EOF
   exit $st;
 }
@@ -296,6 +301,7 @@ EOF
 Getopt::Long::config('bundling');
 GetOptions(
   'debug' => \$debug,
+  'city=s' => \$city,
   'I|data-file=s' => \$test_data_file,
   'g|genmon' => \$genmon_mode,
   'w|sysline' => \$sysline_mode,
@@ -304,6 +310,8 @@ GetOptions(
   'symbolic' => sub { $representation = 'name' },
   'help' => \&usage,
 ) || usage(1);
+
+die "$0: \"$city\" does not look like a valid city code\n" unless $city =~ /^[a-z]{2}-\d+$/;
 
 binmode STDIN, ':utf8';
 binmode STDOUT, ':utf8';

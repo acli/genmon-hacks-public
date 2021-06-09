@@ -73,16 +73,18 @@ These can alternatively be understood as 1-of-the-week, etc., which would sound 
 Example: `tzdate Europe/Berlin` displays the current Central European time
 
 ## weather
-The *weather* script connect to an RSS feed offered by Environment Canada to display current weather conditions.
+The *weather* script connects to an RSS feed offered by Environment Canada to display current weather conditions.
 It will cache the data to avoid overloading Environment Canada’s servers.
 
 To make the output compatible with *genmon*, the `-g` or `--genmon` argument must be given.
 In *genmon* mode, you can hover your mouse over the date and time to read a longer description
 plus two forecasts.
 
-The script is currently hard-coded for Toronto (which means Pearson, not the city centre, so it’s really Mississauga);
-if you aren’t anywhere near Toronto or Mississauga you must change the `$city` variable in the script
-after consulting the Environment Canada site to figure out the correct code to use for your city.
+The script by default pulls weather data for Toronto (which means Pearson, not the city centre, so it’s really Mississauga not Toronto);
+if you aren’t anywhere near Toronto or Mississauga you should
+[consult Environment Canada’s weather site to figure out the correct code for your city](https://weather.gc.ca/mainmenu/weather_menu_e.html),
+then use the `--city` option to specify the correct city.
+The code should look something like bc-85 (Victoria), on-143 (Toronto), or qc-147 (Montreal).
 
 You can also run this script in *sysline* mode (`-w` or `--sysline`);
 this will cause the script to reduce its output to a single line,
