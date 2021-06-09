@@ -65,6 +65,7 @@ use vars qw( $enable_hebcal );
 use vars qw( $enable_planetary $planetary_omit_details );
 use vars qw( $enable_chinese $lang );
 use vars qw( $enable_decaminutes $enable_minutes );
+use vars qw( $enable_4th_hebrew_watch );
 use vars qw( $decimals );
 use vars qw( $sysline_mode );
 use vars qw( $genmon_mode );
@@ -1040,7 +1041,8 @@ sub format_hebrew_date ($) {
     $it .= sprintf('%.*f', $decimals, eval { no integer; fmod($hour - 1, 12) + 1 });
     $it .= sprintf('h (%s)', ($hour < 13? 'night': 'day')) unless $genmon_mode;
     if ($hour <= 12) {
-      $watch = ($hour - 1)/3 + 1;
+      # We can have either 3 or 4 watches. 3 was traditional; 4 was Roman-influenced
+      $watch = ($hour - 1)/($enable_4th_hebrew_watch? 3: 4) + 1;
       if ($sysline_mode || $genmon_mode) {
 	$it .= sprintf(' %dw', $watch);
       } else {
@@ -1096,6 +1098,8 @@ Display date and time information in a non-mainstream calendar.
   -s, --seconds               Enable display of Western "planetary" seconds
   -w, --sysline               Terse format suitable as a sysline .who file
   -z, --chinese, --kanji      Use kanji instead of English (DO NOT USE)
+  -3, --disable-4th-watch     Use 3 watches for Hebrew system. This is the default
+  -4, --enable-4th-watch      Use 4 watches for Hebrew system
       --symbolic              Use zodiac names
       --debug                 Produce debugging output
 
@@ -1124,6 +1128,8 @@ GetOptions(
   'g|genmon' => \$genmon_mode,
   'w|sysline' => \$sysline_mode,
   'z|zh|chinese|kanji' => \$enable_chinese,
+  '3|disable-4th-hebrew-watch|disable-4th-watch' => sub { $enable_4th_hebrew_watch = 0; },
+  '4|enable-4th-hebrew-watch|enable-4th-watch' => \$enable_4th_hebrew_watch,
   'iconic' => sub { $representation = 'icon' },
   'symbolic' => sub { $representation = 'name' },
   'help' => \&usage,
