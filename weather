@@ -186,7 +186,7 @@ sub display_weather_data ($) {
   if ($current->{'summary'} =~ /<b>Dewpoint:<\/b>\s+(.*?)\s*<br\/>/s) {
     $dewpoint = $1;
   }
-  if ($current->{'summary'} =~ /<b>Pressure \/ Tendency:<\/b>\s+(.*?)\s+kPa(?:\s+(\S.*?))?\s*<br\/>/s) {
+  if ($current->{'summary'} =~ /<b>Pressure(?: \/ Tendency)?:<\/b>\s+(\d+(?:\.\d+)?)\s+kPa(?:\s+(\w+))?\s*<br\/>/s) {
     ($pressure, $tendency) = ($1, $2);
   }
   if ($current->{'summary'} =~ /<b>Wind:<\/b>\s+(.*?)\s*<br\/>/s) {
