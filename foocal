@@ -753,6 +753,7 @@ sub determine_chinese_date () {
 	my $reporting_origin = (($chinese_hour - 1.5) * 7200)/864;
 	$reporting_origin -= 100 if $reporting_origin > $centiday;
 	$quarter = $centiday - int($reporting_origin);
+	$quarter -=100 if $quarter >= 100;
       }
       $it = [$year, $month, $day, $solar_term, $chinese_hour, $quarter, $centiday, $deciday, $wday];
     }
