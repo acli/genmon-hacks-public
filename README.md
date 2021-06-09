@@ -21,12 +21,12 @@ night watches in the proportional deciday system is assumed to start at sundown 
 The Hebrew system is the Hebrew calendar and proportional time,
 both calibrated to begin each day at sundown
 (instead of at midnight or at 6pm).
-Note that this means that between sundown and midnight,
-*foocal* and *hebcal* will disagree on what day it is.
+This means that between sundown and midnight,
+*foocal* and [*hebcal*](https://github.com/hebcal/hebcal) will disagree on what day it is.
 
 *foocal* currently relies on HKO data for Chinese lunar dates;
 it’s supposed to automatically download them but this has not been tested in a long time.
-Hebrew date support relies on [*hebcal*](https://github.com/hebcal/hebcal), which must be installed.
+Hebrew date support relies on *hebcal*, which must be installed.
 
 To make the output compatible with *genmon*, the `-g` or `--genmon` argument must be given.
 In *genmon* mode, you can hover your mouse over the date and time to read a longer description.
